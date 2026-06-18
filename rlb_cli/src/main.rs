@@ -67,7 +67,7 @@ fn dump(path: &PathBuf) -> anyhow::Result<()> {
     println!("{}", path.display());
     println!("{} known table(s) discovered:", file.tables().count());
     for table in file.tables() {
-        println!("  {:<32} {} entries", table.name, table.entries.len());
+        println!("  {:<32} {} entries", table.name(), table.len());
     }
     Ok(())
 }
@@ -75,7 +75,7 @@ fn dump(path: &PathBuf) -> anyhow::Result<()> {
 fn tables(path: &PathBuf) -> anyhow::Result<()> {
     let file = RlbFile::load(path)?;
     for table in file.tables() {
-        println!("{}", table.name);
+        println!("{}", table.name());
     }
     Ok(())
 }
@@ -84,7 +84,7 @@ fn dump_table(path: &PathBuf, name: &str) -> anyhow::Result<()> {
     let file = RlbFile::load(path)?;
     let table = file.table(name)?;
 
-    for (i, entry) in table.entries.iter().enumerate() {
+    for (i, entry) in table.iter_entries() {
         println!(
             "[{i}] object_id={} chapters={}..{}..{} zone={} area={} position={}",
             entry.object_id,
@@ -96,10 +96,6 @@ fn dump_table(path: &PathBuf, name: &str) -> anyhow::Result<()> {
             entry.position_id
         );
     }
-    println!(
-        "[terminator] target_script={}",
-        table.terminator.target_script
-    );
     Ok(())
 }
 

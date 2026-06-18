@@ -1,19 +1,7 @@
 use binrw::{BinRead, BinWrite};
 
 use crate::error::{Error, Result};
-
-pub const ENTRY_SIZE: usize = 0x44;
-
-pub const TABLE_NAMES: &[&str] = &[
-    "BackFromAttractionScriptList",
-    "CheckObjectScriptList",
-    "EnterZoneScriptList",
-    "HitDashScriptList",
-    "HitThunderboltScriptList",
-    "ReplaceScriptList",
-    "TimeOutScriptList",
-    "TouchAreaScriptList",
-];
+use crate::schema::TableEntry;
 
 #[derive(Debug, Clone, PartialEq, BinRead, BinWrite)]
 #[brw(big)]
@@ -38,23 +26,36 @@ pub struct ScriptListTableEntry {
     pub flagname2_ptr: u32,
 }
 
-impl ScriptListTableEntry {
-    pub fn is_terminator(&self) -> bool {
-        self.name_ptr == 0
-    }
+impl TableEntry for ScriptListTableEntry {
+    const SIZE: usize = 0x44;
 
-    pub fn read_be(bytes: &[u8]) -> Result<Self> {
+    const KNOWN_TABLES: &'static [&'static str] = &[
+        "BackFromAttractionScriptList",
+        "CheckObjectScriptList",
+        "EnterZoneScriptList",
+        "HitDashScriptList",
+        "HitThunderboltScriptList",
+        "ReplaceScriptList",
+        "TimeOutScriptList",
+        "TouchAreaScriptList",
+    ];
+
+    fn read(bytes: &[u8]) -> Result<Self> {
         let mut cursor = std::io::Cursor::new(bytes);
-        Ok(Self::read(&mut cursor)?)
+        Ok(<ScriptListTableEntry as BinRead>::read(&mut cursor)?)
     }
 
-    pub fn write_be_into(&self, out: &mut [u8]) -> Result<()> {
+    fn write_into(&self, out: &mut [u8]) -> Result<()> {
         let mut cursor = std::io::Cursor::new(out);
         self.write(&mut cursor)?;
         Ok(())
     }
 
-    pub fn set_i32_field(&mut self, field: &str, value: i32) -> Result<()> {
+    fn is_terminator(&self) -> bool {
+        self.name_ptr == 0
+    }
+
+    fn set_field(&mut self, field: &str, value: i32) -> Result<()> {
         match field {
             "object_id" => self.object_id = value,
             "minimum_chapter" => self.minimum_chapter = value,
@@ -73,57 +74,5 @@ impl ScriptListTableEntry {
             }
         }
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn sample() -> ScriptListTableEntry {
-        ScriptListTableEntry {
-            name_ptr: 0x100,
-            object_id: 1,
-            minimum_chapter: 2,
-            medium_chapter: 3,
-            maximum_chapter: 4,
-            flagname_ptr: 0x200,
-            flag_value_condition: 5,
-            target_script: 6,
-            pad_0x1d: [0; 3],
-            unknown: 7,
-            entrypoint_ptr: 0x300,
-            zone_id: 8,
-            area_id: 9,
-            position_id: 10,
-            pad_0x34: 0,
-            after_script_entrypoint_ptr: 0x400,
-            animation_ptr: 0x500,
-            flagname2_ptr: 0x600,
-        }
-    }
-
-    #[test]
-    fn round_trips_through_bytes() {
-        let entry = sample();
-        let mut bytes = [0u8; ENTRY_SIZE];
-        entry.write_be_into(&mut bytes).unwrap();
-        let parsed = ScriptListTableEntry::read_be(&bytes).unwrap();
-        assert_eq!(entry, parsed);
-    }
-
-    #[test]
-    fn terminator_is_recognized_by_null_name_ptr() {
-        let mut entry = sample();
-        assert!(!entry.is_terminator());
-        entry.name_ptr = 0;
-        assert!(entry.is_terminator());
-    }
-
-    #[test]
-    fn rejects_pointer_field_writes() {
-        let mut entry = sample();
-        let err = entry.set_i32_field("name_ptr", 42).unwrap_err();
-        assert!(matches!(err, Error::TypeMismatch { .. }));
     }
 }

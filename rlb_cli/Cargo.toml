@@ -9,5 +9,5 @@ path = "src/main.rs"
 
 [dependencies]
 rlb_core = { path = "../rlb_core" }
-clap = { version = "=4.5.0", features = ["derive"] }
+clap = { version = "4", features = ["derive"] }
 anyhow = "1"
