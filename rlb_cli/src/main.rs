@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 use rlb_core::RlbFile;
+use rlb_core::table::model::EntryRef;
 
 #[derive(Parser)]
 #[command(
@@ -85,16 +86,27 @@ fn dump_table(path: &PathBuf, name: &str) -> anyhow::Result<()> {
     let table = file.table(name)?;
 
     for (i, entry) in table.iter_entries() {
-        println!(
-            "[{i}] object_id={} chapters={}..{}..{} zone={} area={} position={}",
-            entry.object_id,
-            entry.minimum_chapter,
-            entry.medium_chapter,
-            entry.maximum_chapter,
-            entry.zone_id,
-            entry.area_id,
-            entry.position_id
-        );
+        match entry {
+            EntryRef::Script(e) => {
+                println!(
+                    "[{i}] object_id={} chapters={}..{}..{} zone={} area={} position={}",
+                    e.object_id,
+                    e.minimum_chapter,
+                    e.medium_chapter,
+                    e.maximum_chapter,
+                    e.zone_id,
+                    e.area_id,
+                    e.position_id,
+
+                );
+            }
+            EntryRef::Pointer(e) => {
+                println!(
+                    "[{i}] ptr={}",
+                    e.ptr,
+                )
+            }
+        }
     }
     Ok(())
 }

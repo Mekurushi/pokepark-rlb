@@ -24,8 +24,7 @@ impl<T: TableEntry> TableView<T> {
                         root_address,
                     })?;
             let record = T::read(record_bytes)?;
-
-            if record.is_terminator() {
+            if record.is_terminator() && !raw.relocations.contains(&(offset as u32)) {
                 return Ok(TableView {
                     name,
                     root_address,

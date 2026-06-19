@@ -1,6 +1,6 @@
 use crate::error::Result;
 use crate::format::RawFile;
-use crate::schema::{ScriptListTableEntry, TableEntry};
+use crate::schema::{PointerTableEntry, ScriptListTableEntry, TableEntry};
 use crate::table::kind::TableKind;
 use crate::table::model::Table;
 use crate::table::table_view::TableView;
@@ -23,7 +23,25 @@ pub fn script_list_discover(raw: &RawFile, name: String, addr: u32) -> Result<Ta
         )?),
     ))
 }
-pub static SCHEMAS: &[Schema] = &[Schema {
-    matches: script_list_matches,
-    discover: script_list_discover,
-}];
+
+pub fn pointer_table_matches(name: &str) -> bool {
+    PointerTableEntry::KNOWN_TABLES.contains(&name)
+}
+
+pub fn pointer_table_discover(raw: &RawFile, name: String, addr: u32) -> Result<Table> {
+    Ok(Table::new(
+        name.clone(),
+        addr,
+        TableKind::PointerTable(TableView::<PointerTableEntry>::discover(raw, name, addr)?),
+    ))
+}
+pub static SCHEMAS: &[Schema] = &[
+    Schema {
+        matches: script_list_matches,
+        discover: script_list_discover,
+    },
+    Schema {
+        matches: pointer_table_matches,
+        discover: pointer_table_discover,
+    },
+];

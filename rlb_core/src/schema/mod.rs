@@ -1,6 +1,9 @@
 use crate::error::Result;
 
+mod pointer_table_entry;
 mod script_list_table_entry;
+
+pub use pointer_table_entry::PointerTableEntry;
 
 pub use script_list_table_entry::ScriptListTableEntry;
 
