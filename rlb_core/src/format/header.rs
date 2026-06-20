@@ -26,7 +26,7 @@ impl Header {
         self.reloc_offset() + self.num_relocs * 4
     }
 
-    pub fn strings_offset(&self) -> u32 {
+    pub fn table_labels_offset(&self) -> u32 {
         self.entries_offset() + (self.num_entries + self.num_other_entries) * 8
     }
 }

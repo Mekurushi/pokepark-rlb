@@ -22,10 +22,10 @@ impl EntrySlot {
 #[derive(Debug, Clone)]
 pub struct RawFile {
     pub header: Header,
-    pub data: Vec<u8>,
+    pub data: Vec<u8>, // contains also the strings used by pointer
     pub relocations: Vec<u32>,
     pub entries: Vec<EntrySlot>,
-    pub strings: Vec<u8>,
+    pub table_labels: Vec<u8>,
 }
 
 impl RawFile {
@@ -56,9 +56,10 @@ impl RawFile {
             offset += 4;
         }
 
-        let strings_len = bytes.len() as u32 - header.strings_offset();
-        let strings =
-            read_slice(bytes, header.strings_offset(), strings_len, "string pool")?.to_vec();
+        let table_labels_len = bytes.len() as u32 - header.table_labels_offset();
+        let table_labels =
+            read_slice(bytes, header.table_labels_offset(), table_labels_len, "table labels pool")?
+                .to_vec();
 
         let total_entries = header.num_entries + header.num_other_entries;
         let mut entries = Vec::with_capacity(total_entries as usize);
@@ -87,20 +88,20 @@ impl RawFile {
             data,
             relocations,
             entries,
-            strings,
+            table_labels,
         })
     }
 
     pub fn resolve_name(&self, name_offset: u32) -> Result<String> {
         let tail = self
-            .strings
+            .table_labels
             .get(name_offset as usize..)
             .ok_or(Error::UnexpectedEof {
-                context: "string pool name",
+                context: "table labels tail",
             })?;
         let end = tail.iter().position(|&b| b == 0).unwrap_or(tail.len());
         String::from_utf8(tail[..end].to_vec()).map_err(|_| Error::UnexpectedEof {
-            context: "non-ASCII string pool entry",
+            context: "non-ASCII table labels entry",
         })
     }
 
@@ -112,8 +113,8 @@ impl RawFile {
 
         let reloc_offset = HEADER_SIZE + self.data.len() as u32;
         let entries_offset = reloc_offset + self.relocations.len() as u32 * 4;
-        let strings_offset = entries_offset + self.entries.len() as u32 * 8;
-        let file_size = strings_offset + self.strings.len() as u32;
+        let table_labels_offset = entries_offset + self.entries.len() as u32 * 8;
+        let file_size = table_labels_offset + self.table_labels.len() as u32;
 
         let header = Header {
             file_size,
@@ -147,7 +148,7 @@ impl RawFile {
             out.extend_from_slice(&address.to_be_bytes());
             out.extend_from_slice(&second.to_be_bytes());
         }
-        out.extend_from_slice(&self.strings);
+        out.extend_from_slice(&self.table_labels);
 
         debug_assert_eq!(
             out.len(),
