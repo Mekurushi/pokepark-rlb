@@ -2,6 +2,9 @@ use binrw::{BinRead, BinWrite};
 
 pub const HEADER_SIZE: u32 = 0x20;
 
+pub const RELOCATION_ENTRY_SIZE: u32 = 4;
+pub const ENTRY_SLOT_SIZE: u32 = 8;
+
 #[derive(Debug, Clone, PartialEq, Eq, BinRead, BinWrite)]
 #[brw(big)]
 pub struct Header {
@@ -23,10 +26,11 @@ impl Header {
     }
 
     pub fn entries_offset(&self) -> u32 {
-        self.reloc_offset() + self.num_relocs * 4
+        self.reloc_offset() + self.num_relocs * RELOCATION_ENTRY_SIZE
     }
 
     pub fn table_labels_offset(&self) -> u32 {
-        self.entries_offset() + (self.num_entries + self.num_other_entries) * 8
+        self.entries_offset() + (self.num_entries + self.num_other_entries) * ENTRY_SLOT_SIZE
     }
+
 }

@@ -1,9 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "rlb_core",
-    "rlb_cli",
-    "rlb_ui",
+    "rlb-format"
 ]
 
 [workspace.package]

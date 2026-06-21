@@ -1,0 +1,11 @@
+[package]
+name = "rlb-format"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+binrw = "0.15.1"
+thiserror = "2.0.18"
+
+[lints]
+workspace = true

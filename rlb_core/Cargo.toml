@@ -1,9 +1,0 @@
-[package]
-name = "rlb_core"
-version.workspace = true
-edition.workspace = true
-description = "Structured parsing, editing, and serialization for .rlb files"
-
-[dependencies]
-thiserror = "2"
-binrw = "0.15"
