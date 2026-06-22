@@ -9,7 +9,7 @@ mod tests {
         )
     )]
 
-    use rlb_format::{EntrySlot, RawFile};
+    use rlb_format::{RawFile, TableRecord};
 
     fn build_file(
         data: &[u8],
@@ -84,7 +84,7 @@ mod tests {
 
         assert_eq!(
             raw.entries[0],
-            EntrySlot::Named {
+            TableRecord::Named {
                 address: 0x100,
                 name_offset: 0
             }
@@ -92,7 +92,7 @@ mod tests {
 
         assert_eq!(
             raw.entries[1],
-            EntrySlot::Named {
+            TableRecord::Named {
                 address: 0x200,
                 name_offset: 6
             }
@@ -100,7 +100,7 @@ mod tests {
 
         assert_eq!(
             raw.entries[2],
-            EntrySlot::Unknown {
+            TableRecord::Unknown {
                 address: 0x300,
                 raw_offset: 0xDEAD_BEEF
             }

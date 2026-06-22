@@ -4,5 +4,5 @@ mod raw_file;
 mod relocation;
 
 pub use header::{HEADER_SIZE, Header};
-pub use raw_file::{EntrySlot, RawFile};
+pub use raw_file::{RawFile, TableRecord};
 pub use relocation::RelocationTable;

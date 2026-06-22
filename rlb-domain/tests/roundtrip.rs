@@ -10,7 +10,7 @@ mod tests {
     )]
 
     use rlb_domain::RLBFile;
-    use rlb_format::EntrySlot;
+    use rlb_format::TableRecord;
 
     #[test]
     fn parses_and_resolves_table_of_contents_names() {
@@ -24,8 +24,8 @@ mod tests {
             .expect("table named `FsbFileListData` should be found via the label pool index");
 
         match entry {
-            EntrySlot::Named { address, .. } => assert_eq!(*address, 0xA08),
-            EntrySlot::Unknown { .. } => panic!("expected a named entry"),
+            TableRecord::Named { address, .. } => assert_eq!(*address, 0xA08),
+            TableRecord::Unknown { .. } => panic!("expected a named record"),
         }
 
         assert!(

@@ -9,15 +9,16 @@ use rlb_error::{Error, Result};
 
 // --- Domain ---
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum EntrySlot {
+pub enum TableRecord {
     Named { address: u32, name_offset: u32 },
     Unknown { address: u32, raw_offset: u32 },
 }
 
-impl EntrySlot {
+impl TableRecord {
     pub fn address(&self) -> u32 {
         match self {
-            EntrySlot::Named { address, .. } | EntrySlot::Unknown { address, .. } => *address,
+            TableRecord::Named { address, .. }
+            | TableRecord::Unknown { address, .. } => *address,
         }
     }
 }
@@ -27,7 +28,7 @@ pub struct RawFile {
     pub header: Header,
     pub data: Vec<u8>,
     pub relocation_table: RelocationTable,
-    pub entries: Vec<EntrySlot>,
+    pub entries: Vec<TableRecord>,
     pub table_labels: Vec<u8>,
 }
 
@@ -94,14 +95,19 @@ impl RawFile {
         let entries = layout
             .named
             .into_iter()
-            .map(|slot| EntrySlot::Named {
+            .map(|slot| TableRecord::Named {
                 address: slot.address,
                 name_offset: slot.name_offset,
             })
-            .chain(layout.unknown.into_iter().map(|slot| EntrySlot::Unknown {
-                address: slot.address,
-                raw_offset: slot.raw_offset,
-            }))
+            .chain(
+                layout
+                    .unknown
+                    .into_iter()
+                    .map(|slot| TableRecord::Unknown {
+                        address: slot.address,
+                        raw_offset: slot.raw_offset,
+                    }),
+            )
             .collect();
 
         Ok(RawFile {
@@ -114,10 +120,10 @@ impl RawFile {
     }
 
     pub fn write(&self) -> Result<Vec<u8>> {
-        let (named, unknown): (Vec<&EntrySlot>, Vec<&EntrySlot>) = self
+        let (named, unknown): (Vec<&TableRecord>, Vec<&TableRecord>) = self
             .entries
             .iter()
-            .partition(|e| matches!(e, EntrySlot::Named { .. }));
+            .partition(|e| matches!(e, TableRecord::Named { .. }));
 
         let reloc_offset = HEADER_SIZE as usize + self.data.len();
         let entries_offset =
@@ -138,14 +144,14 @@ impl RawFile {
         let named = named
             .into_iter()
             .map(|slot| match *slot {
-                EntrySlot::Named {
+                TableRecord::Named {
                     address,
                     name_offset,
                 } => NamedSlotRaw {
                     address,
                     name_offset,
                 },
-                EntrySlot::Unknown { .. } => {
+                TableRecord::Unknown { .. } => {
                     unreachable!("partitioned as Named above")
                 }
             })
@@ -153,14 +159,14 @@ impl RawFile {
         let unknown = unknown
             .into_iter()
             .map(|slot| match *slot {
-                EntrySlot::Unknown {
+                TableRecord::Unknown {
                     address,
                     raw_offset,
                 } => UnknownSlotRaw {
                     address,
                     raw_offset,
                 },
-                EntrySlot::Named { .. } => {
+                TableRecord::Named { .. } => {
                     unreachable!("partitioned as Unknown above")
                 }
             })
