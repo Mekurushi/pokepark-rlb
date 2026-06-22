@@ -3,9 +3,9 @@ use std::io::Cursor;
 
 use binrw::{BinRead, BinWrite};
 
-use crate::error::{Error, Result};
-use crate::header::{HEADER_SIZE, Header, RELOCATION_ENTRY_SIZE, ENTRY_SLOT_SIZE};
+use crate::header::{ENTRY_SLOT_SIZE, HEADER_SIZE, Header, RELOCATION_ENTRY_SIZE};
 use crate::relocation::RelocationTable;
+use rlb_error::{Error, Result};
 
 // --- Domain ---
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -17,8 +17,7 @@ pub enum EntrySlot {
 impl EntrySlot {
     pub fn address(&self) -> u32 {
         match self {
-            EntrySlot::Named { address, .. }
-            | EntrySlot::Unknown { address, .. } => *address,
+            EntrySlot::Named { address, .. } | EntrySlot::Unknown { address, .. } => *address,
         }
     }
 }
@@ -73,7 +72,6 @@ struct RawFileLayoutRef<'a> {
     table_labels: &'a [u8],
 }
 
-
 impl RawFile {
     pub fn parse(bytes: &[u8]) -> Result<Self> {
         let mut cursor = Cursor::new(bytes);
@@ -122,8 +120,8 @@ impl RawFile {
             .partition(|e| matches!(e, EntrySlot::Named { .. }));
 
         let reloc_offset = HEADER_SIZE as usize + self.data.len();
-        let entries_offset = reloc_offset + self.relocation_table.len() *
-            RELOCATION_ENTRY_SIZE as usize;
+        let entries_offset =
+            reloc_offset + self.relocation_table.len() * RELOCATION_ENTRY_SIZE as usize;
         let table_labels_offset = entries_offset + self.entries.len() * ENTRY_SLOT_SIZE as usize;
         let file_size = table_labels_offset + self.table_labels.len();
 

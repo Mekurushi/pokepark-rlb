@@ -1,11 +1,10 @@
 [package]
-name = "rlb-format"
+name = "rlb-error"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
-binrw = "0.15.1"
-rlb-error = { path = "../rlb-error" }
+thiserror = "2.0.18"
 
 [lints]
 workspace = true

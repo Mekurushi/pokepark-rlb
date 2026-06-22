@@ -32,5 +32,4 @@ impl Header {
     pub fn table_labels_offset(&self) -> u32 {
         self.entries_offset() + (self.num_entries + self.num_other_entries) * ENTRY_SLOT_SIZE
     }
-
 }

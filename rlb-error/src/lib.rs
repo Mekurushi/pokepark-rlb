@@ -1,3 +1,4 @@
+use std::str::Utf8Error;
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -17,8 +18,19 @@ pub enum Error {
         length: u32,
     },
 
+    #[error("{context} contains invalid UTF-8 at offset {offset}")]
+    InvalidUtf8 {
+        context: &'static str,
+        offset: u32,
+        source: Utf8Error,
+    },
+
     #[error("serialization produced {actual} bytes but computed file_size was {expected}")]
     SerializationMismatch { expected: u32, actual: usize },
-    #[error("")]
+
+    #[error("{context}: value {value} exceeds u32::MAX ({})", u32::MAX)]
     ValueTooLarge { context: &'static str, value: usize },
+
+    #[error("validation failed: {0}")]
+    Validation(String),
 }

@@ -1,4 +1,3 @@
-mod error;
 mod header;
 #[allow(clippy::map_err_ignore)]
 mod raw_file;

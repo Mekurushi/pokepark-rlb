@@ -1,10 +1,10 @@
 [package]
-name = "rlb-format"
+name = "rlb-domain"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
-binrw = "0.15.1"
+rlb-format = { path = "../rlb-format" }
 rlb-error = { path = "../rlb-error" }
 
 [lints]

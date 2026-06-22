@@ -69,11 +69,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "rlb-domain"
+version = "0.1.0"
+dependencies = [
+ "rlb-error",
+ "rlb-format",
+]
+
+[[package]]
+name = "rlb-error"
+version = "0.1.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "rlb-format"
 version = "0.1.0"
 dependencies = [
  "binrw",
- "thiserror",
+ "rlb-error",
 ]
 
 [[package]]

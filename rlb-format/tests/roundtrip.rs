@@ -1,10 +1,14 @@
 #[cfg(test)]
 mod tests {
-    #![cfg_attr(test, allow(
-        clippy::cast_possible_truncation,
-        clippy::expect_used,
-        clippy::map_err_ignore,
-    ))]
+    #![cfg_attr(
+        test,
+        allow(
+            clippy::cast_possible_truncation,
+            clippy::expect_used,
+            clippy::map_err_ignore,
+        )
+    )]
+
     use rlb_format::{EntrySlot, RawFile};
 
     fn build_file(
@@ -48,13 +52,7 @@ mod tests {
     }
 
     fn single_entry_file_bytes() -> Vec<u8> {
-        build_file(
-            &[0xAA, 0xBB, 0xCC, 0xDD],
-            &[0],
-            &[(0x10, 0)],
-            &[],
-            b"foo\0",
-        )
+        build_file(&[0xAA, 0xBB, 0xCC, 0xDD], &[0], &[(0x10, 0)], &[], b"foo\0")
     }
 
     fn multi_entry_file_bytes() -> Vec<u8> {
@@ -126,5 +124,15 @@ mod tests {
         bytes[8..12].copy_from_slice(&999u32.to_be_bytes());
 
         assert!(RawFile::parse(&bytes).is_err());
+    }
+
+    #[test]
+    fn sanity_test_with_real_file() {
+        // uncommitted file
+        let bytes =
+            std::fs::read("../examples/ScriptList_Ar05Zn02.rlb").expect("read file should succeed");
+        let raw = RawFile::parse(&bytes).expect("parse should succeed");
+        let rewritten = raw.write().expect("write should succeed");
+        assert_eq!(bytes, rewritten);
     }
 }
