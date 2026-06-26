@@ -1,5 +1,5 @@
 use crate::TableEntry;
-use crate::entry_schemas::script_list::{BackFromAttractionScriptList, CheckObjectScriptList, EnterZoneScriptList, HitThunderboltScriptList, ReplaceScriptList};
+use crate::entry_schemas::script_list::{BackFromAttractionScriptList, CheckObjectScriptList, EnterZoneScriptList, HitThunderboltScriptList, ReplaceScriptList, TimeOutScriptList};
 use crate::entry_schemas::single_pointer::fsb_file_list_data::FsbFileListDataEntry;
 use crate::rlb_file::StringId;
 use crate::table_view::TableView;
@@ -13,6 +13,7 @@ pub enum TableKind {
     CheckObjectScriptList(TableView<CheckObjectScriptList>),
     HitThunderboltScriptList(TableView<HitThunderboltScriptList>),
     ReplaceScriptList(TableView<ReplaceScriptList>),
+    TimeOutScriptList(TableView<TimeOutScriptList>),
     Unknown,
 }
 #[derive(Debug, Clone)]
@@ -70,6 +71,13 @@ impl Table {
             )?)
         } else if name == ReplaceScriptList::type_name(){
             TableKind::ReplaceScriptList(TableView::discover(
+                data,
+                offset,
+                resolve_string,
+                is_relocated,
+            )?)
+        } else if name == TimeOutScriptList::type_name(){
+            TableKind::TimeOutScriptList(TableView::discover(
                 data,
                 offset,
                 resolve_string,
