@@ -1,6 +1,8 @@
 use crate::TableEntry;
 use crate::rlb_file::StringId;
-use crate::table_entry::entry_schemas::{BackFromAttractionScriptList, CheckObjectScriptList, EnterZoneScriptList, FsbFileListDataEntry};
+use crate::table_entry::entry_schemas::{
+    BackFromAttractionScriptList, CheckObjectScriptList, EnterZoneScriptList, FsbFileListDataEntry,
+};
 use crate::table_view::TableView;
 use rlb_error::Result;
 
@@ -51,7 +53,7 @@ impl Table {
                 resolve_string,
                 is_relocated,
             )?)
-        } else if name == CheckObjectScriptList::type_name(){
+        } else if name == CheckObjectScriptList::type_name() {
             TableKind::CheckObjectScriptList(TableView::discover(
                 data,
                 offset,

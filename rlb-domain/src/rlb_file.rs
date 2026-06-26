@@ -39,7 +39,6 @@ impl RLBFile {
         let mut strings: SlotMap<StringId, String> = SlotMap::with_key();
         let mut tables: SlotMap<TableId, Table> = SlotMap::with_key();
         let mut labels = SlotMap::with_key();
-        
 
         for record in records {
             match record {
@@ -53,8 +52,17 @@ impl RLBFile {
                 } => {
                     let name = resolve_string_from_raw_data(&table_labels, name_offset as usize)?;
                     let mut resolve_string = |offset: u32| -> Result<StringId> {
+                        //TODO: better string interning
                         let s = resolve_string_from_raw_data(&data, offset as usize)?;
-                        Ok(strings.insert(s))
+                        let exist = strings
+                            .iter()
+                            .find(|(_id, string)| **string == s)
+                            .map(|(id, _string)| id);
+                        match exist {
+                            Some(id) => Ok(id),
+
+                            _ => Ok(strings.insert(s)),
+                        }
                     };
                     let mut is_relocated =
                         |offset: u32| -> bool { relocation_table.is_relocated(offset) };
