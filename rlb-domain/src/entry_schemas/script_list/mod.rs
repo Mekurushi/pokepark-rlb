@@ -27,6 +27,7 @@ pub struct ScriptListEntry {
 }
 
 impl ScriptListEntry {
+    pub const SIZE: usize = 0x44;
     pub fn read<R, E>(
         data: &[u8],
         base_offset: usize,
@@ -127,10 +128,6 @@ impl ScriptListEntry {
             _ => return Err(Error::Validation(format!("unknown field: '{field}'"))),
         }
         Ok(())
-    }
-
-    pub fn size() -> usize {
-        0x44
     }
 }
 pub const SCRIPT_LIST_FIELDS: &[FieldDescriptor] = &[

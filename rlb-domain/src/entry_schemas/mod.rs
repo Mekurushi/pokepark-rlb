@@ -11,7 +11,8 @@ pub struct FieldDescriptor {
 }
 
 pub trait TableEntry: Sized + std::fmt::Debug {
-    fn type_name() -> &'static str;
+    const SIZE: usize;
+    const TYPE_NAME: &'static str;
 
     fn fields(&self) -> &[FieldDescriptor];
     fn is_terminator(&self) -> bool;
@@ -20,7 +21,6 @@ pub trait TableEntry: Sized + std::fmt::Debug {
 
     fn set(&mut self, field: &str, value: Value) -> Result<()>;
 
-    fn size() -> usize;
     fn read<R, E>(
         data: &[u8],
         base_offset: usize,
@@ -56,9 +56,8 @@ macro_rules! impl_table_entry_wrapper {
         pub struct $wrapper(pub $inner);
 
         impl TableEntry for $wrapper {
-            fn type_name() -> &'static str {
-                $type_name
-            }
+            const SIZE: usize = <$inner>::SIZE;
+            const TYPE_NAME: &'static str = $type_name;
 
             fn fields(&self) -> &[FieldDescriptor] {
                 $fields
@@ -74,10 +73,6 @@ macro_rules! impl_table_entry_wrapper {
 
             fn set(&mut self, field: &str, value: Value) -> Result<()> {
                 self.0.set(field, value)
-            }
-
-            fn size() -> usize {
-                <$inner>::size()
             }
 
             fn read<R, E>(

@@ -10,6 +10,7 @@ pub struct SinglePointerEntry {
 }
 
 impl SinglePointerEntry {
+    const SIZE: usize = 0x4;
     pub fn read<R, E>(
         data: &[u8],
         base_offset: usize,
@@ -42,10 +43,6 @@ impl SinglePointerEntry {
             _ => return Err(Error::Validation(format!("unknown field: '{field}'"))),
         }
         Ok(())
-    }
-
-    pub fn size() -> usize {
-        0x4
     }
 }
 

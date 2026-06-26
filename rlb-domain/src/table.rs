@@ -67,7 +67,7 @@ macro_rules! make_resolve {
                 E: FnMut(u32) -> bool,
             {
                 $(
-                    if name == $entry::type_name() {
+                    if name == $entry::TYPE_NAME{
                         return Ok(Self {
                             name: name.to_owned(),
                             kind: TableKind::$variant(

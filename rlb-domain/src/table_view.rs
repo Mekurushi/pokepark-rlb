@@ -22,11 +22,11 @@ impl<T: TableEntry> TableView<T> {
         let mut offset = root_address;
 
         loop {
-            let record_bytes =
-                data.get(offset..offset + T::size())
-                    .ok_or(Error::UnexpectedEof {
-                        context: "parsing table record",
-                    })?;
+            let record_bytes = data
+                .get(offset..offset + T::SIZE)
+                .ok_or(Error::UnexpectedEof {
+                    context: "parsing table record",
+                })?;
 
             let record = T::read(record_bytes, offset, resolve_string, is_relocated)?;
             if record.is_terminator() {
@@ -37,7 +37,7 @@ impl<T: TableEntry> TableView<T> {
             }
 
             entries.push(record);
-            offset += T::size();
+            offset += T::SIZE;
         }
     }
 }
