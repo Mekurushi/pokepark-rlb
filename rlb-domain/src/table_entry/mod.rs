@@ -1,19 +1,36 @@
 use crate::value::Value;
-mod back_from_attraction_script_list_entry;
+use rlb_error::Result;
+pub mod back_from_attraction_script_list_entry;
 mod fsb_file_list_data;
 mod layouts;
+
+use crate::rlb_file::StringId;
+pub use layouts::BackFromAttractionScriptList;
+pub use layouts::FsbFileListDataEntry;
+use rlb_format::RelocationTable;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FieldDescriptor {
     pub name: &'static str,
 }
 
-pub trait TableEntry: std::fmt::Debug {
-    fn type_name(&self) -> &'static str;
+pub trait TableEntry: Sized + std::fmt::Debug {
+    fn type_name() -> &'static str;
 
     fn fields(&self) -> &[FieldDescriptor];
+    fn is_terminator(&self) -> bool;
 
     fn get(&self, field: &str) -> Option<Value>;
 
-    fn set(&mut self, field: &str, value: Value) -> rlb_error::Result<()>;
+    fn set(&mut self, field: &str, value: Value) -> Result<()>;
+
+    fn size() -> usize;
+    fn read<R>(
+        data: &[u8],
+        base_offset: usize,
+        resolve_string: &mut R,
+        relocation_table: &RelocationTable,
+    ) -> Result<Self>
+    where
+        R: FnMut(u32) -> Result<StringId>;
 }

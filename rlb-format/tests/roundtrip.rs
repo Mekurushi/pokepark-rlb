@@ -80,10 +80,10 @@ mod tests {
         let bytes = multi_entry_file_bytes();
         let raw = RawFile::parse(&bytes).expect("parse should succeed");
 
-        assert_eq!(raw.entries.len(), 3);
+        assert_eq!(raw.records.len(), 3);
 
         assert_eq!(
-            raw.entries[0],
+            raw.records[0],
             TableRecord::Named {
                 address: 0x100,
                 name_offset: 0
@@ -91,7 +91,7 @@ mod tests {
         );
 
         assert_eq!(
-            raw.entries[1],
+            raw.records[1],
             TableRecord::Named {
                 address: 0x200,
                 name_offset: 6
@@ -99,7 +99,7 @@ mod tests {
         );
 
         assert_eq!(
-            raw.entries[2],
+            raw.records[2],
             TableRecord::Unknown {
                 address: 0x300,
                 raw_offset: 0xDEAD_BEEF

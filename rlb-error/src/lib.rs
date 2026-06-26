@@ -14,14 +14,14 @@ pub enum Error {
     #[error("offset {offset} is out of bounds for {context} (section length {length})")]
     OffsetOutOfBounds {
         context: &'static str,
-        offset: u32,
-        length: u32,
+        offset: usize,
+        length: usize,
     },
 
     #[error("{context} contains invalid UTF-8 at offset {offset}")]
     InvalidUtf8 {
         context: &'static str,
-        offset: u32,
+        offset: usize,
         source: Utf8Error,
     },
 

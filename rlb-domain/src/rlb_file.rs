@@ -1,36 +1,84 @@
+use crate::table::Table;
+use crate::util::resolve_string_from_raw_data;
 use rlb_error::Result;
-use rlb_format::{Header, RawFile, RelocationTable};
+use rlb_format::{Header, RawFile, RelocationTable, TableRecord};
+use slotmap::SlotMap;
 
-use crate::label_pool::LabelPool;
-use crate::table_of_contents::TableOfContents;
+slotmap::new_key_type! {
+    pub struct TableId;
+    pub struct LabelId;
+    pub struct StringId;
+}
+
+#[derive(Debug, Clone)]
+pub struct TocSlot {
+    pub table: TableId,
+    pub label: Option<LabelId>,
+}
 
 #[derive(Debug, Clone)]
 pub struct RLBFile {
-    #[allow(dead_code)]
     header: Header,
-    // TODO: data segment, stringpool, tables
-    #[allow(dead_code)]
+    strings: SlotMap<StringId, String>,
+    tables: SlotMap<TableId, Table>,
     relocation_table: RelocationTable,
-    pub toc: TableOfContents,
-    #[allow(dead_code)]
-    labels: LabelPool,
+    toc: Vec<TocSlot>,
+    labels: SlotMap<LabelId, String>,
 }
 
 impl RLBFile {
     pub fn from_raw(raw: RawFile) -> Result<Self> {
         let RawFile {
             header,
-            data: _data,
+            data,
             relocation_table,
-            entries,
+            records,
             table_labels,
         } = raw;
+        let mut toc: Vec<TocSlot> = Vec::with_capacity(records.len());
+        let mut strings: SlotMap<StringId, String> = SlotMap::with_key();
+        let mut tables: SlotMap<TableId, Table> = SlotMap::with_key();
+        let mut labels = SlotMap::with_key();
 
-        let labels = LabelPool::new(table_labels);
-        let toc = TableOfContents::new(entries, &labels)?;
+        for record in records {
+            match record {
+                TableRecord::Named {
+                    address,
+                    name_offset,
+                }
+                | TableRecord::Unknown {
+                    address,
+                    raw_offset: name_offset,
+                } => {
+                    let name = resolve_string_from_raw_data(&table_labels, name_offset as usize)?;
+                    let mut resolve_string = |offset: u32| -> Result<StringId> {
+                        let s = resolve_string_from_raw_data(&data, offset as usize)?;
+                        Ok(strings.insert(s))
+                    };
+
+                    let table = Table::resolve(
+                        &name,
+                        &data,
+                        address as usize,
+                        &mut resolve_string,
+                        &relocation_table,
+                    )?;
+
+                    let table_id = tables.insert(table);
+                    let label_id = labels.insert(name);
+
+                    toc.push(TocSlot {
+                        table: table_id,
+                        label: Some(label_id),
+                    });
+                }
+            }
+        }
 
         Ok(Self {
             header,
+            strings,
+            tables,
             relocation_table,
             toc,
             labels,

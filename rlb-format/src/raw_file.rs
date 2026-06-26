@@ -17,8 +17,7 @@ pub enum TableRecord {
 impl TableRecord {
     pub fn address(&self) -> u32 {
         match self {
-            TableRecord::Named { address, .. }
-            | TableRecord::Unknown { address, .. } => *address,
+            TableRecord::Named { address, .. } | TableRecord::Unknown { address, .. } => *address,
         }
     }
 }
@@ -28,7 +27,7 @@ pub struct RawFile {
     pub header: Header,
     pub data: Vec<u8>,
     pub relocation_table: RelocationTable,
-    pub entries: Vec<TableRecord>,
+    pub records: Vec<TableRecord>,
     pub table_labels: Vec<u8>,
 }
 
@@ -99,36 +98,31 @@ impl RawFile {
                 address: slot.address,
                 name_offset: slot.name_offset,
             })
-            .chain(
-                layout
-                    .unknown
-                    .into_iter()
-                    .map(|slot| TableRecord::Unknown {
-                        address: slot.address,
-                        raw_offset: slot.raw_offset,
-                    }),
-            )
+            .chain(layout.unknown.into_iter().map(|slot| TableRecord::Unknown {
+                address: slot.address,
+                raw_offset: slot.raw_offset,
+            }))
             .collect();
 
         Ok(RawFile {
             header: layout.header,
             data: layout.data,
             relocation_table: RelocationTable::from_raw(layout.relocations),
-            entries,
+            records: entries,
             table_labels: layout.table_labels,
         })
     }
 
     pub fn write(&self) -> Result<Vec<u8>> {
         let (named, unknown): (Vec<&TableRecord>, Vec<&TableRecord>) = self
-            .entries
+            .records
             .iter()
             .partition(|e| matches!(e, TableRecord::Named { .. }));
 
         let reloc_offset = HEADER_SIZE as usize + self.data.len();
         let entries_offset =
             reloc_offset + self.relocation_table.len() * RELOCATION_ENTRY_SIZE as usize;
-        let table_labels_offset = entries_offset + self.entries.len() * ENTRY_SLOT_SIZE as usize;
+        let table_labels_offset = entries_offset + self.records.len() * ENTRY_SLOT_SIZE as usize;
         let file_size = table_labels_offset + self.table_labels.len();
 
         let header = Header {
