@@ -1,56 +1,17 @@
 use crate::rlb_file::StringId;
-use crate::util::checked_u32;
+use crate::util::{read_bytes, read_u8, read_u32, value_at};
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
 
-pub(super) fn read_u32(data: &[u8], offset: usize) -> Result<u32> {
-    data.get(offset..offset + 4)
-        .and_then(|b| b.try_into().ok())
-        .map(u32::from_be_bytes)
-        .ok_or(Error::OffsetOutOfBounds {
-            context: "entry field",
-            offset,
-            length: data.len(),
-        })
-}
+mod back_from_attraction_script_list_entry;
+mod check_object_script_list;
+mod enter_zone_script_list;
+mod hit_thunderbolt_script_list;
 
-pub(super) fn read_u8(data: &[u8], offset: usize) -> Result<u8> {
-    data.get(offset).copied().ok_or(Error::OffsetOutOfBounds {
-        context: "entry field",
-        offset,
-        length: data.len(),
-    })
-}
-
-pub(super) fn read_bytes<const N: usize>(data: &[u8], offset: usize) -> Result<[u8; N]> {
-    data.get(offset..offset + N)
-        .and_then(|b| b.try_into().ok())
-        .ok_or(Error::OffsetOutOfBounds {
-            context: "entry field",
-            offset,
-            length: data.len(),
-        })
-}
-
-pub(super) fn value_at<R, E>(
-    data: &[u8],
-    field_offset: usize,
-    base_offset: usize,
-    resolve_string: &mut R,
-    is_relocated: &mut E,
-) -> Result<Value>
-where
-    R: FnMut(u32) -> Result<StringId>,
-    E: FnMut(u32) -> bool,
-{
-    let raw = read_u32(data, field_offset)?;
-    let abs_offset = checked_u32(base_offset + field_offset, "calculating field offset")?;
-    if is_relocated(abs_offset) {
-        Ok(Value::Pointer(resolve_string(raw)?))
-    } else {
-        Ok(Value::Integer(raw))
-    }
-}
+pub use back_from_attraction_script_list_entry::BackFromAttractionScriptList;
+pub use check_object_script_list::CheckObjectScriptList;
+pub use enter_zone_script_list::EnterZoneScriptList;
+pub use hit_thunderbolt_script_list::HitThunderboltScriptList;
 
 #[derive(Clone, Copy, Debug)]
 pub struct ScriptListEntry {
@@ -80,7 +41,7 @@ impl ScriptListEntry {
         base_offset: usize,
         resolve_string: &mut R,
         is_relocated: &mut E,
-    ) -> Result<Self>
+    ) -> rlb_error::Result<Self>
     where
         R: FnMut(u32) -> Result<StringId>,
         E: FnMut(u32) -> bool,
@@ -143,8 +104,8 @@ impl ScriptListEntry {
         }
     }
 
-    pub fn set(&mut self, field: &str, value: Value) -> Result<()> {
-        fn require_int(field: &str, value: Value) -> Result<u32> {
+    pub fn set(&mut self, field: &str, value: Value) -> rlb_error::Result<()> {
+        fn require_int(field: &str, value: Value) -> rlb_error::Result<u32> {
             match value {
                 Value::Integer(v) => Ok(v),
                 Value::Pointer(_) => Err(Error::Validation(format!(
@@ -181,52 +142,6 @@ impl ScriptListEntry {
         0x44
     }
 }
-
-#[derive(Clone, Copy, Debug)]
-pub struct SinglePointerEntry {
-    pub script_name: Value,
-}
-
-impl SinglePointerEntry {
-    pub fn read<R, E>(
-        data: &[u8],
-        base_offset: usize,
-        resolve_string: &mut R,
-        is_relocated: &mut E,
-    ) -> Result<Self>
-    where
-        R: FnMut(u32) -> Result<StringId>,
-        E: FnMut(u32) -> bool,
-    {
-        Ok(Self {
-            script_name: value_at(data, 0x00, base_offset, resolve_string, is_relocated)?,
-        })
-    }
-    pub fn is_terminator(&self) -> bool {
-        self.script_name == Value::Integer(0)
-    }
-    pub fn get(&self, field: &str) -> Option<Value> {
-        match field {
-            "script_name" => Some(self.script_name),
-            _ => None,
-        }
-    }
-
-    pub fn set(&mut self, field: &str, value: Value) -> Result<()> {
-        match field {
-            "script_name" => {
-                self.script_name = value;
-            }
-            _ => return Err(Error::Validation(format!("unknown field: '{field}'"))),
-        }
-        Ok(())
-    }
-
-    pub fn size() -> usize {
-        0x4
-    }
-}
-
 pub const SCRIPT_LIST_FIELDS: &[FieldDescriptor] = &[
     FieldDescriptor { name: "name" },
     FieldDescriptor { name: "object_id" },
@@ -260,7 +175,3 @@ pub const SCRIPT_LIST_FIELDS: &[FieldDescriptor] = &[
     FieldDescriptor { name: "animation" },
     FieldDescriptor { name: "flagname2" },
 ];
-
-pub const FSB_FILE_LIST_FIELDS: &[FieldDescriptor] = &[FieldDescriptor {
-    name: "script_name",
-}];

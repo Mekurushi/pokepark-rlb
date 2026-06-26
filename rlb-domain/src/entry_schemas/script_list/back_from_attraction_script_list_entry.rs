@@ -1,15 +1,15 @@
+use crate::entry_schemas::script_list::{SCRIPT_LIST_FIELDS, ScriptListEntry};
 use crate::rlb_file::StringId;
-use crate::table_entry::layouts::{SCRIPT_LIST_FIELDS, ScriptListEntry};
-use crate::table_entry::{FieldDescriptor, TableEntry};
 use crate::value::Value;
+use crate::{FieldDescriptor, TableEntry};
 use rlb_error::Result;
 
 #[derive(Debug, Clone)]
-pub struct CheckObjectScriptList(pub ScriptListEntry);
+pub struct BackFromAttractionScriptList(pub ScriptListEntry);
 
-impl TableEntry for CheckObjectScriptList {
+impl TableEntry for BackFromAttractionScriptList {
     fn type_name() -> &'static str {
-        "CheckObjectScriptList"
+        "BackFromAttractionScriptList"
     }
 
     fn fields(&self) -> &[FieldDescriptor] {

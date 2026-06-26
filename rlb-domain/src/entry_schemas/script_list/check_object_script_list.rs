@@ -1,29 +1,31 @@
+use crate::entry_schemas::script_list::{SCRIPT_LIST_FIELDS, ScriptListEntry};
 use crate::rlb_file::StringId;
-use crate::table_entry::layouts::{FSB_FILE_LIST_FIELDS, SinglePointerEntry, ScriptListEntry};
-use crate::table_entry::{FieldDescriptor, TableEntry};
 use crate::value::Value;
+use crate::{FieldDescriptor, TableEntry};
 use rlb_error::Result;
+
 #[derive(Debug, Clone)]
-pub struct FsbFileListDataEntry(pub SinglePointerEntry);
-impl TableEntry for FsbFileListDataEntry {
+pub struct CheckObjectScriptList(pub ScriptListEntry);
+
+impl TableEntry for CheckObjectScriptList {
     fn type_name() -> &'static str {
-        "FsbFileListData"
+        "CheckObjectScriptList"
     }
 
     fn fields(&self) -> &[FieldDescriptor] {
-        FSB_FILE_LIST_FIELDS
+        SCRIPT_LIST_FIELDS
     }
 
     fn is_terminator(&self) -> bool {
-        SinglePointerEntry::is_terminator(&self.0)
+        ScriptListEntry::is_terminator(&self.0)
     }
 
     fn get(&self, field: &str) -> Option<Value> {
-        SinglePointerEntry::get(&self.0, field)
+        ScriptListEntry::get(&self.0, field)
     }
 
     fn set(&mut self, field: &str, value: Value) -> Result<()> {
-        SinglePointerEntry::set(&mut self.0, field, value)
+        ScriptListEntry::set(&mut self.0, field, value)
     }
     fn size() -> usize {
         ScriptListEntry::size()
@@ -39,6 +41,6 @@ impl TableEntry for FsbFileListDataEntry {
         R: FnMut(u32) -> Result<StringId>,
         E: FnMut(u32) -> bool,
     {
-        SinglePointerEntry::read(data, base_offset, resolve_string, is_relocated).map(Self)
+        ScriptListEntry::read(data, base_offset, resolve_string, is_relocated).map(Self)
     }
 }

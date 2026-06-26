@@ -1,6 +1,10 @@
 use crate::TableEntry;
+use crate::entry_schemas::script_list::{
+    BackFromAttractionScriptList, CheckObjectScriptList, EnterZoneScriptList,
+    HitThunderboltScriptList,
+};
+use crate::entry_schemas::single_pointer::fsb_file_list_data::FsbFileListDataEntry;
 use crate::rlb_file::StringId;
-use crate::table_entry::entry_schemas::{BackFromAttractionScriptList, CheckObjectScriptList, EnterZoneScriptList, FsbFileListDataEntry, HitThunderboltScriptList};
 use crate::table_view::TableView;
 use rlb_error::Result;
 
