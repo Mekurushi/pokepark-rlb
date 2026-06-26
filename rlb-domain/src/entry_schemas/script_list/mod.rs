@@ -9,6 +9,7 @@ mod enter_zone_script_list;
 mod hit_thunderbolt_script_list;
 mod replace_script_list;
 mod time_out_script_list;
+mod touch_area_script_list;
 
 pub use back_from_attraction_script_list_entry::BackFromAttractionScriptList;
 pub use check_object_script_list::CheckObjectScriptList;
@@ -16,7 +17,7 @@ pub use enter_zone_script_list::EnterZoneScriptList;
 pub use hit_thunderbolt_script_list::HitThunderboltScriptList;
 pub use replace_script_list::ReplaceScriptList;
 pub use time_out_script_list::TimeOutScriptList;
-
+pub use touch_area_script_list::TouchAreaScriptList;
 #[derive(Clone, Copy, Debug)]
 pub struct ScriptListEntry {
     pub name: Value,
