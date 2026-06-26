@@ -1,9 +1,9 @@
 use crate::rlb_file::StringId;
-use crate::table_entry::{BackFromAttractionScriptList, FsbFileListDataEntry};
-use crate::table_entry::TableEntry;
 use crate::table_view::TableView;
 use rlb_error::Result;
 use rlb_format::RelocationTable;
+use crate::table_entry::entry_schemas::{BackFromAttractionScriptList, FsbFileListDataEntry};
+use crate::TableEntry;
 
 #[derive(Debug, Clone)]
 pub enum TableKind {

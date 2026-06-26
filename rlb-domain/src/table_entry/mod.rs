@@ -1,12 +1,10 @@
 use crate::value::Value;
 use rlb_error::Result;
-pub mod back_from_attraction_script_list_entry;
-mod fsb_file_list_data;
 mod layouts;
+pub mod entry_schemas;
 
 use crate::rlb_file::StringId;
-pub use layouts::BackFromAttractionScriptList;
-pub use layouts::FsbFileListDataEntry;
+
 use rlb_format::RelocationTable;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

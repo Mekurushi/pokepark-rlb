@@ -113,8 +113,7 @@ impl ScriptListEntry {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct BackFromAttractionScriptList(pub ScriptListEntry);
+
 
 #[derive(Clone, Copy, Debug)]
 pub struct SinglePointerEntry {
@@ -137,8 +136,6 @@ impl SinglePointerEntry {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct FsbFileListDataEntry(pub SinglePointerEntry);
 
 pub const SCRIPT_LIST_FIELDS: &[FieldDescriptor] = &[
     FieldDescriptor { name: "name" },

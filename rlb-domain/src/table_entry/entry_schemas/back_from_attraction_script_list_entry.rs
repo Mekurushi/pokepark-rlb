@@ -1,11 +1,14 @@
 use crate::rlb_file::StringId;
 use crate::table_entry::layouts::{
-    BackFromAttractionScriptList, SCRIPT_LIST_FIELDS, ScriptListEntry,
+    SCRIPT_LIST_FIELDS, ScriptListEntry,
 };
 use crate::table_entry::{FieldDescriptor, TableEntry};
 use crate::value::Value;
 use rlb_error::{Error, Result};
 use rlb_format::RelocationTable;
+
+#[derive(Debug, Clone)]
+pub struct BackFromAttractionScriptList(pub ScriptListEntry);
 
 impl TableEntry for BackFromAttractionScriptList {
     fn type_name() -> &'static str {

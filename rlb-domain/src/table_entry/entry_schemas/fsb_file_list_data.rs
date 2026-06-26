@@ -1,10 +1,11 @@
 use crate::rlb_file::StringId;
-use crate::table_entry::layouts::{FsbFileListDataEntry, SinglePointerEntry, FSB_FILE_LIST_FIELDS};
+use crate::table_entry::layouts::{ SinglePointerEntry, FSB_FILE_LIST_FIELDS};
 use crate::table_entry::{FieldDescriptor, TableEntry};
 use crate::value::Value;
 use rlb_error::{Error, Result};
 use rlb_format::RelocationTable;
-
+#[derive(Debug, Clone)]
+pub struct FsbFileListDataEntry(pub SinglePointerEntry);
 impl TableEntry for FsbFileListDataEntry {
     fn type_name() -> &'static str {
         "FsbFileListData"
