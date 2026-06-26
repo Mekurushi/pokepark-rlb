@@ -2,7 +2,6 @@ use crate::rlb_file::StringId;
 use crate::util::checked_u32;
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
-use rlb_format::RelocationTable;
 
 pub(super) fn read_u32(data: &[u8], offset: usize) -> Result<u32> {
     data.get(offset..offset + 4)
@@ -33,19 +32,20 @@ pub(super) fn read_bytes<const N: usize>(data: &[u8], offset: usize) -> Result<[
         })
 }
 
-pub(super) fn value_at<R>(
+pub(super) fn value_at<R, E>(
     data: &[u8],
     field_offset: usize,
     base_offset: usize,
     resolve_string: &mut R,
-    relocations: &RelocationTable,
+    is_relocated: &mut E,
 ) -> Result<Value>
 where
     R: FnMut(u32) -> Result<StringId>,
+    E: FnMut(u32) -> bool,
 {
     let raw = read_u32(data, field_offset)?;
     let abs_offset = checked_u32(base_offset + field_offset, "calculating field offset")?;
-    if relocations.is_relocated(abs_offset) {
+    if is_relocated(abs_offset) {
         Ok(Value::Pointer(resolve_string(raw)?))
     } else {
         Ok(Value::Integer(raw))
@@ -75,27 +75,28 @@ pub struct ScriptListEntry {
 }
 
 impl ScriptListEntry {
-    pub fn read<R>(
+    pub fn read<R, E>(
         data: &[u8],
         base_offset: usize,
         resolve_string: &mut R,
-        relocations: &RelocationTable,
+        is_relocated: &mut E,
     ) -> Result<Self>
     where
         R: FnMut(u32) -> Result<StringId>,
+        E: FnMut(u32) -> bool,
     {
         Ok(Self {
-            name: value_at(data, 0x00, base_offset, resolve_string, relocations)?,
+            name: value_at(data, 0x00, base_offset, resolve_string, is_relocated)?,
             object_id: read_u32(data, 0x04)?,
             minimum_chapter: read_u32(data, 0x08)?,
             medium_chapter: read_u32(data, 0x0C)?,
             maximum_chapter: read_u32(data, 0x10)?,
-            flagname: value_at(data, 0x14, base_offset, resolve_string, relocations)?,
+            flagname: value_at(data, 0x14, base_offset, resolve_string, is_relocated)?,
             flag_value_condition: read_u32(data, 0x18)?,
             target_script: read_u8(data, 0x1C)?,
             pad_0x1d: read_bytes(data, 0x1D)?,
             unknown: read_u32(data, 0x20)?,
-            entrypoint: value_at(data, 0x24, base_offset, resolve_string, relocations)?,
+            entrypoint: value_at(data, 0x24, base_offset, resolve_string, is_relocated)?,
             zone_id: read_u32(data, 0x28)?,
             area_id: read_u32(data, 0x2C)?,
             position_id: read_u32(data, 0x30)?,
@@ -105,10 +106,10 @@ impl ScriptListEntry {
                 0x38,
                 base_offset,
                 resolve_string,
-                relocations,
+                is_relocated,
             )?,
-            animation: value_at(data, 0x3C, base_offset, resolve_string, relocations)?,
-            flagname2: value_at(data, 0x40, base_offset, resolve_string, relocations)?,
+            animation: value_at(data, 0x3C, base_offset, resolve_string, is_relocated)?,
+            flagname2: value_at(data, 0x40, base_offset, resolve_string, is_relocated)?,
         })
     }
 
@@ -183,17 +184,18 @@ pub struct SinglePointerEntry {
 }
 
 impl SinglePointerEntry {
-    pub fn read<R>(
+    pub fn read<R, E>(
         data: &[u8],
         base_offset: usize,
         resolve_string: &mut R,
-        relocations: &RelocationTable,
+        is_relocated: &mut E,
     ) -> Result<Self>
     where
         R: FnMut(u32) -> Result<StringId>,
+        E: FnMut(u32) -> bool,
     {
         Ok(Self {
-            script_name: value_at(data, 0x00, base_offset, resolve_string, relocations)?,
+            script_name: value_at(data, 0x00, base_offset, resolve_string, is_relocated)?,
         })
     }
     pub fn is_terminator(&self) -> bool {

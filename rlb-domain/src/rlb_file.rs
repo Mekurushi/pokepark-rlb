@@ -55,13 +55,15 @@ impl RLBFile {
                         let s = resolve_string_from_raw_data(&data, offset as usize)?;
                         Ok(strings.insert(s))
                     };
+                    let mut is_relocated =
+                        |offset: u32| -> bool { relocation_table.is_relocated(offset) };
 
                     let table = Table::resolve(
                         &name,
                         &data,
                         address as usize,
                         &mut resolve_string,
-                        &relocation_table,
+                        &mut is_relocated,
                     )?;
 
                     let table_id = tables.insert(table);

@@ -1,9 +1,8 @@
 use crate::rlb_file::StringId;
-use crate::table_entry::layouts::{SinglePointerEntry, FSB_FILE_LIST_FIELDS};
+use crate::table_entry::layouts::{FSB_FILE_LIST_FIELDS, SinglePointerEntry};
 use crate::table_entry::{FieldDescriptor, TableEntry};
 use crate::value::Value;
 use rlb_error::Result;
-use rlb_format::RelocationTable;
 #[derive(Debug, Clone)]
 pub struct FsbFileListDataEntry(pub SinglePointerEntry);
 impl TableEntry for FsbFileListDataEntry {
@@ -30,15 +29,16 @@ impl TableEntry for FsbFileListDataEntry {
         0x4
     }
 
-    fn read<R>(
+    fn read<R, E>(
         data: &[u8],
         base_offset: usize,
         resolve_string: &mut R,
-        relocation_table: &RelocationTable,
+        is_relocated: &mut E,
     ) -> Result<Self>
     where
         R: FnMut(u32) -> Result<StringId>,
+        E: FnMut(u32) -> bool,
     {
-        SinglePointerEntry::read(data, base_offset, resolve_string, relocation_table).map(Self)
+        SinglePointerEntry::read(data, base_offset, resolve_string, is_relocated).map(Self)
     }
 }

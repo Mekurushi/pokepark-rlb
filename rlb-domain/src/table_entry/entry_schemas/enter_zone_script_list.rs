@@ -1,9 +1,8 @@
 use crate::rlb_file::StringId;
-use crate::table_entry::layouts::{ScriptListEntry, SCRIPT_LIST_FIELDS};
+use crate::table_entry::layouts::{SCRIPT_LIST_FIELDS, ScriptListEntry};
 use crate::table_entry::{FieldDescriptor, TableEntry};
 use crate::value::Value;
 use rlb_error::Result;
-use rlb_format::RelocationTable;
 
 #[derive(Debug, Clone)]
 pub struct EnterZoneScriptListEntry(pub ScriptListEntry);
@@ -32,15 +31,16 @@ impl TableEntry for EnterZoneScriptListEntry {
         0x44
     }
 
-    fn read<R>(
+    fn read<R, E>(
         data: &[u8],
         base_offset: usize,
         resolve_string: &mut R,
-        relocation_table: &RelocationTable,
+        is_relocated: &mut E,
     ) -> Result<Self>
     where
         R: FnMut(u32) -> Result<StringId>,
+        E: FnMut(u32) -> bool,
     {
-        ScriptListEntry::read(data, base_offset, resolve_string, relocation_table).map(Self)
+        ScriptListEntry::read(data, base_offset, resolve_string, is_relocated).map(Self)
     }
 }

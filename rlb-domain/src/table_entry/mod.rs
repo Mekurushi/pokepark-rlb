@@ -5,8 +5,6 @@ mod layouts;
 
 use crate::rlb_file::StringId;
 
-use rlb_format::RelocationTable;
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FieldDescriptor {
     pub name: &'static str,
@@ -23,12 +21,13 @@ pub trait TableEntry: Sized + std::fmt::Debug {
     fn set(&mut self, field: &str, value: Value) -> Result<()>;
 
     fn size() -> usize;
-    fn read<R>(
+    fn read<R, E>(
         data: &[u8],
         base_offset: usize,
         resolve_string: &mut R,
-        relocation_table: &RelocationTable,
+        is_relocated: &mut E,
     ) -> Result<Self>
     where
-        R: FnMut(u32) -> Result<StringId>;
+        R: FnMut(u32) -> Result<StringId>,
+        E: FnMut(u32) -> bool;
 }
