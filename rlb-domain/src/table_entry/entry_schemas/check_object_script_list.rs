@@ -5,11 +5,11 @@ use crate::value::Value;
 use rlb_error::Result;
 
 #[derive(Debug, Clone)]
-pub struct EnterZoneScriptList(pub ScriptListEntry);
+pub struct CheckObjectScriptList(pub ScriptListEntry);
 
-impl TableEntry for EnterZoneScriptList {
+impl TableEntry for CheckObjectScriptList {
     fn type_name() -> &'static str {
-        "EnterZoneScriptList"
+        "CheckObjectScriptList"
     }
 
     fn fields(&self) -> &[FieldDescriptor] {

@@ -39,6 +39,7 @@ impl RLBFile {
         let mut strings: SlotMap<StringId, String> = SlotMap::with_key();
         let mut tables: SlotMap<TableId, Table> = SlotMap::with_key();
         let mut labels = SlotMap::with_key();
+        
 
         for record in records {
             match record {

@@ -22,7 +22,7 @@ pub enum Error {
     InvalidUtf8 {
         context: &'static str,
         offset: usize,
-        source: Utf8Error,
+        source: Option<Utf8Error>,
     },
 
     #[error("serialization produced {actual} bytes but computed file_size was {expected}")]
