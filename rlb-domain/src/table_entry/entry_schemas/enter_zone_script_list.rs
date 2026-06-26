@@ -28,7 +28,7 @@ impl TableEntry for EnterZoneScriptList {
         ScriptListEntry::set(&mut self.0, field, value)
     }
     fn size() -> usize {
-        0x44
+        ScriptListEntry::size()
     }
 
     fn read<R, E>(

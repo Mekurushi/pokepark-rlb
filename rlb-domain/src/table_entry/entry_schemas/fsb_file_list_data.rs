@@ -1,5 +1,5 @@
 use crate::rlb_file::StringId;
-use crate::table_entry::layouts::{FSB_FILE_LIST_FIELDS, SinglePointerEntry};
+use crate::table_entry::layouts::{FSB_FILE_LIST_FIELDS, SinglePointerEntry, ScriptListEntry};
 use crate::table_entry::{FieldDescriptor, TableEntry};
 use crate::value::Value;
 use rlb_error::Result;
@@ -26,7 +26,7 @@ impl TableEntry for FsbFileListDataEntry {
         SinglePointerEntry::set(&mut self.0, field, value)
     }
     fn size() -> usize {
-        0x4
+        ScriptListEntry::size()
     }
 
     fn read<R, E>(

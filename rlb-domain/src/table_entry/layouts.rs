@@ -176,6 +176,10 @@ impl ScriptListEntry {
         }
         Ok(())
     }
+
+    pub fn size() -> usize {
+        0x44
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -216,6 +220,10 @@ impl SinglePointerEntry {
             _ => return Err(Error::Validation(format!("unknown field: '{field}'"))),
         }
         Ok(())
+    }
+
+    pub fn size() -> usize {
+        0x4
     }
 }
 
