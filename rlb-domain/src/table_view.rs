@@ -1,5 +1,5 @@
-use crate::rlb_file::StringId;
 use crate::TableEntry;
+use crate::rlb_file::StringId;
 use rlb_error::{Error, Result};
 use rlb_format::RelocationTable;
 
@@ -22,9 +22,11 @@ impl<T: TableEntry> TableView<T> {
         let mut offset = root_address;
 
         loop {
-            let record_bytes = data
-                .get(offset..offset + T::size())
-                .ok_or(Error::UnexpectedEof { context: "parsing table record" })?;
+            let record_bytes =
+                data.get(offset..offset + T::size())
+                    .ok_or(Error::UnexpectedEof {
+                        context: "parsing table record",
+                    })?;
 
             let record = T::read(record_bytes, offset, resolve_string, relocations)?;
             if record.is_terminator() {

@@ -1,7 +1,7 @@
 use crate::value::Value;
 use rlb_error::Result;
-mod layouts;
 pub mod entry_schemas;
+mod layouts;
 
 use crate::rlb_file::StringId;
 

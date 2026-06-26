@@ -1,8 +1,8 @@
 use crate::rlb_file::StringId;
-use crate::table_entry::layouts::{ SinglePointerEntry, FSB_FILE_LIST_FIELDS};
+use crate::table_entry::layouts::{SinglePointerEntry, FSB_FILE_LIST_FIELDS};
 use crate::table_entry::{FieldDescriptor, TableEntry};
 use crate::value::Value;
-use rlb_error::{Error, Result};
+use rlb_error::Result;
 use rlb_format::RelocationTable;
 #[derive(Debug, Clone)]
 pub struct FsbFileListDataEntry(pub SinglePointerEntry);
@@ -16,24 +16,15 @@ impl TableEntry for FsbFileListDataEntry {
     }
 
     fn is_terminator(&self) -> bool {
-        self.0.script_name == Value::Integer(0)
+        SinglePointerEntry::is_terminator(&self.0)
     }
 
     fn get(&self, field: &str) -> Option<Value> {
-        match field {
-            "script_name" => Some(self.0.script_name),
-            _ => None,
-        }
+        SinglePointerEntry::get(&self.0, field)
     }
 
     fn set(&mut self, field: &str, value: Value) -> Result<()> {
-        match field {
-            "script_name" => {
-                self.0.script_name = value;
-            }
-            _ => return Err(Error::Validation(format!("unknown field: '{field}'"))),
-        }
-        Ok(())
+        SinglePointerEntry::set(&mut self.0, field, value)
     }
     fn size() -> usize {
         0x4

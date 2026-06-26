@@ -1,9 +1,11 @@
+use crate::TableEntry;
 use crate::rlb_file::StringId;
+use crate::table_entry::entry_schemas::{
+    BackFromAttractionScriptList, EnterZoneScriptListEntry, FsbFileListDataEntry,
+};
 use crate::table_view::TableView;
 use rlb_error::Result;
 use rlb_format::RelocationTable;
-use crate::table_entry::entry_schemas::{BackFromAttractionScriptList, EnterZoneScriptListEntry, FsbFileListDataEntry};
-use crate::TableEntry;
 
 #[derive(Debug, Clone)]
 pub enum TableKind {
@@ -36,13 +38,21 @@ impl Table {
                 resolve_string,
                 relocation_table,
             )?)
-        }
-        else if name == FsbFileListDataEntry::type_name(){
-            TableKind::FsbFileListData(TableView::discover(data, offset, resolve_string, relocation_table)?)
-        } else if name == EnterZoneScriptListEntry::type_name(){
-            TableKind::EnterZoneScriptList(TableView::discover(data, offset, resolve_string, relocation_table)?)
-        } else
-        {
+        } else if name == FsbFileListDataEntry::type_name() {
+            TableKind::FsbFileListData(TableView::discover(
+                data,
+                offset,
+                resolve_string,
+                relocation_table,
+            )?)
+        } else if name == EnterZoneScriptListEntry::type_name() {
+            TableKind::EnterZoneScriptList(TableView::discover(
+                data,
+                offset,
+                resolve_string,
+                relocation_table,
+            )?)
+        } else {
             TableKind::Unknown
         };
 

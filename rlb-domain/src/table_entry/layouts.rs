@@ -1,8 +1,8 @@
 use crate::rlb_file::StringId;
+use crate::util::checked_u32;
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
 use rlb_format::RelocationTable;
-use crate::util::checked_u32;
 
 pub(super) fn read_u32(data: &[u8], offset: usize) -> Result<u32> {
     data.get(offset..offset + 4)
@@ -111,9 +111,71 @@ impl ScriptListEntry {
             flagname2: value_at(data, 0x40, base_offset, resolve_string, relocations)?,
         })
     }
+
+    pub fn is_terminator(&self) -> bool {
+        self.name == Value::Integer(0)
+            && self.object_id == 0
+            && self.minimum_chapter == 0
+            && self.medium_chapter == 0
+            && self.maximum_chapter == 0
+    }
+    pub fn get(&self, field: &str) -> Option<Value> {
+        match field {
+            "name" => Some(self.name),
+            "object_id" => Some(Value::Integer(self.object_id)),
+            "minimum_chapter" => Some(Value::Integer(self.minimum_chapter)),
+            "medium_chapter" => Some(Value::Integer(self.medium_chapter)),
+            "maximum_chapter" => Some(Value::Integer(self.maximum_chapter)),
+            "flagname" => Some(self.flagname),
+            "flag_value_condition" => Some(Value::Integer(self.flag_value_condition)),
+            "target_script" => Some(Value::Integer(u32::from(self.target_script))),
+            "unknown" => Some(Value::Integer(self.unknown)),
+            "entrypoint" => Some(self.entrypoint),
+            "zone_id" => Some(Value::Integer(self.zone_id)),
+            "area_id" => Some(Value::Integer(self.area_id)),
+            "position_id" => Some(Value::Integer(self.position_id)),
+            "pad_0x34" => Some(Value::Integer(self.pad_0x34)),
+            "after_script_entrypoint" => Some(self.after_script_entrypoint),
+            "animation" => Some(self.animation),
+            "flagname2" => Some(self.flagname2),
+            _ => None,
+        }
+    }
+
+    pub fn set(&mut self, field: &str, value: Value) -> Result<()> {
+        fn require_int(field: &str, value: Value) -> Result<u32> {
+            match value {
+                Value::Integer(v) => Ok(v),
+                Value::Pointer(_) => Err(Error::Validation(format!(
+                    "field '{field}' expects an integer value, not a pointer"
+                ))),
+            }
+        }
+
+        match field {
+            "name" => self.name = value,
+            "object_id" => self.object_id = require_int(field, value)?,
+            "minimum_chapter" => self.minimum_chapter = require_int(field, value)?,
+            "medium_chapter" => self.medium_chapter = require_int(field, value)?,
+            "maximum_chapter" => self.maximum_chapter = require_int(field, value)?,
+            "flagname" => self.flagname = value,
+            "flag_value_condition" => self.flag_value_condition = require_int(field, value)?,
+            //TODO: validate range
+            "target_script" => self.target_script = require_int(field, value)? as u8,
+            "unknown" => self.unknown = require_int(field, value)?,
+            "entrypoint" => self.entrypoint = value,
+            "zone_id" => self.zone_id = require_int(field, value)?,
+            "area_id" => self.area_id = require_int(field, value)?,
+            "position_id" => self.position_id = require_int(field, value)?,
+            "pad_0x34" => self.pad_0x34 = require_int(field, value)?,
+            "after_script_entrypoint" => self.after_script_entrypoint = value,
+            "animation" => self.animation = value,
+            "flagname2" => self.flagname2 = value,
+            _ => return Err(Error::Validation(format!("unknown field: '{field}'"))),
+        }
+        Ok(())
+    }
 }
-
-
 
 #[derive(Clone, Copy, Debug)]
 pub struct SinglePointerEntry {
@@ -131,11 +193,29 @@ impl SinglePointerEntry {
         R: FnMut(u32) -> Result<StringId>,
     {
         Ok(Self {
-            script_name: value_at(data, 0x00, base_offset, resolve_string, relocations)?
+            script_name: value_at(data, 0x00, base_offset, resolve_string, relocations)?,
         })
     }
-}
+    pub fn is_terminator(&self) -> bool {
+        self.script_name == Value::Integer(0)
+    }
+    pub fn get(&self, field: &str) -> Option<Value> {
+        match field {
+            "script_name" => Some(self.script_name),
+            _ => None,
+        }
+    }
 
+    pub fn set(&mut self, field: &str, value: Value) -> Result<()> {
+        match field {
+            "script_name" => {
+                self.script_name = value;
+            }
+            _ => return Err(Error::Validation(format!("unknown field: '{field}'"))),
+        }
+        Ok(())
+    }
+}
 
 pub const SCRIPT_LIST_FIELDS: &[FieldDescriptor] = &[
     FieldDescriptor { name: "name" },
