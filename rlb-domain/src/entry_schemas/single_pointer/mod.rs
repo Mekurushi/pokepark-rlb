@@ -1,9 +1,8 @@
+use crate::TableEntry;
 use crate::rlb_file::StringId;
 use crate::util::value_at;
-use crate::{FieldDescriptor, Value};
+use crate::{FieldDescriptor, Value, impl_table_entry_wrapper};
 use rlb_error::{Error, Result};
-
-pub mod fsb_file_list_data;
 
 #[derive(Clone, Copy, Debug)]
 pub struct SinglePointerEntry {
@@ -53,3 +52,10 @@ impl SinglePointerEntry {
 pub const FSB_FILE_LIST_FIELDS: &[FieldDescriptor] = &[FieldDescriptor {
     name: "script_name",
 }];
+
+impl_table_entry_wrapper! {
+    struct FsbFileListDataEntry(SinglePointerEntry);
+
+    type_name = "FsbFileListData";
+    fields = FSB_FILE_LIST_FIELDS;
+}

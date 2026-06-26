@@ -1,6 +1,10 @@
 use crate::TableEntry;
-use crate::entry_schemas::script_list::{BackFromAttractionScriptList, CheckObjectScriptList, EnterZoneScriptList, HitThunderboltScriptList, ReplaceScriptList, TimeOutScriptList, TouchAreaScriptList};
-use crate::entry_schemas::single_pointer::fsb_file_list_data::FsbFileListDataEntry;
+use crate::entry_schemas::script_list::HitDashScriptList;
+use crate::entry_schemas::script_list::{
+    BackFromAttractionScriptList, CheckObjectScriptList, EnterZoneScriptList,
+    HitThunderboltScriptList, ReplaceScriptList, TimeOutScriptList, TouchAreaScriptList,
+};
+use crate::entry_schemas::single_pointer::FsbFileListDataEntry;
 use crate::rlb_file::StringId;
 use crate::table_view::TableView;
 use rlb_error::Result;
@@ -18,6 +22,7 @@ macro_rules! table_types {
             EnterZoneScriptList           => EnterZoneScriptList,
             FsbFileListDataEntry          => FsbFileListData,
             CheckObjectScriptList         => CheckObjectScriptList,
+            HitDashScriptList      => HitDashScriptList,
             HitThunderboltScriptList      => HitThunderboltScriptList,
             ReplaceScriptList             => ReplaceScriptList,
             TimeOutScriptList             => TimeOutScriptList,

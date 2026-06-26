@@ -1,23 +1,9 @@
 use crate::rlb_file::StringId;
 use crate::util::{read_bytes, read_u8, read_u32, value_at};
 use crate::{FieldDescriptor, Value};
+use crate::{TableEntry, impl_table_entry_wrapper};
 use rlb_error::{Error, Result};
 
-mod back_from_attraction_script_list_entry;
-mod check_object_script_list;
-mod enter_zone_script_list;
-mod hit_thunderbolt_script_list;
-mod replace_script_list;
-mod time_out_script_list;
-mod touch_area_script_list;
-
-pub use back_from_attraction_script_list_entry::BackFromAttractionScriptList;
-pub use check_object_script_list::CheckObjectScriptList;
-pub use enter_zone_script_list::EnterZoneScriptList;
-pub use hit_thunderbolt_script_list::HitThunderboltScriptList;
-pub use replace_script_list::ReplaceScriptList;
-pub use time_out_script_list::TimeOutScriptList;
-pub use touch_area_script_list::TouchAreaScriptList;
 #[derive(Clone, Copy, Debug)]
 pub struct ScriptListEntry {
     pub name: Value,
@@ -180,3 +166,44 @@ pub const SCRIPT_LIST_FIELDS: &[FieldDescriptor] = &[
     FieldDescriptor { name: "animation" },
     FieldDescriptor { name: "flagname2" },
 ];
+
+impl_table_entry_wrapper! {
+    struct BackFromAttractionScriptList(ScriptListEntry);
+
+    fields = SCRIPT_LIST_FIELDS;
+}
+impl_table_entry_wrapper! {
+    struct ReplaceScriptList(ScriptListEntry);
+
+    fields = SCRIPT_LIST_FIELDS;
+}
+impl_table_entry_wrapper! {
+    struct CheckObjectScriptList(ScriptListEntry);
+
+    fields = SCRIPT_LIST_FIELDS;
+}
+impl_table_entry_wrapper! {
+    struct EnterZoneScriptList(ScriptListEntry);
+
+    fields = SCRIPT_LIST_FIELDS;
+}
+impl_table_entry_wrapper! {
+    struct HitDashScriptList(ScriptListEntry);
+
+    fields = SCRIPT_LIST_FIELDS;
+}
+impl_table_entry_wrapper! {
+    struct HitThunderboltScriptList(ScriptListEntry);
+
+    fields = SCRIPT_LIST_FIELDS;
+}
+impl_table_entry_wrapper! {
+    struct TimeOutScriptList(ScriptListEntry);
+
+    fields = SCRIPT_LIST_FIELDS;
+}
+impl_table_entry_wrapper! {
+    struct TouchAreaScriptList(ScriptListEntry);
+
+    fields = SCRIPT_LIST_FIELDS;
+}
