@@ -1,8 +1,6 @@
 use crate::TableEntry;
 use crate::rlb_file::StringId;
-use crate::table_entry::entry_schemas::{
-    BackFromAttractionScriptList, CheckObjectScriptList, EnterZoneScriptList, FsbFileListDataEntry,
-};
+use crate::table_entry::entry_schemas::{BackFromAttractionScriptList, CheckObjectScriptList, EnterZoneScriptList, FsbFileListDataEntry, HitThunderboltScriptList};
 use crate::table_view::TableView;
 use rlb_error::Result;
 
@@ -12,6 +10,7 @@ pub enum TableKind {
     EnterZoneScriptList(TableView<EnterZoneScriptList>),
     FsbFileListData(TableView<FsbFileListDataEntry>),
     CheckObjectScriptList(TableView<CheckObjectScriptList>),
+    HitThunderboltScriptList(TableView<HitThunderboltScriptList>),
     Unknown,
 }
 #[derive(Debug, Clone)]
@@ -55,6 +54,13 @@ impl Table {
             )?)
         } else if name == CheckObjectScriptList::type_name() {
             TableKind::CheckObjectScriptList(TableView::discover(
+                data,
+                offset,
+                resolve_string,
+                is_relocated,
+            )?)
+        } else if name == HitThunderboltScriptList::type_name() {
+            TableKind::HitThunderboltScriptList(TableView::discover(
                 data,
                 offset,
                 resolve_string,
