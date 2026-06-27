@@ -69,7 +69,9 @@ mod tests {
     fn parse_then_write_round_trips_byte_for_byte() {
         for original in [single_entry_file_bytes(), multi_entry_file_bytes()] {
             let raw = RawFile::parse(&original).expect("parse should succeed");
-            let rewritten = raw.write().expect("write should succeed");
+            let rewritten = raw
+                .serialize_custom()
+                .expect("write should succeed");
 
             assert_eq!(original, rewritten);
         }
@@ -80,29 +82,30 @@ mod tests {
         let bytes = multi_entry_file_bytes();
         let raw = RawFile::parse(&bytes).expect("parse should succeed");
 
-        assert_eq!(raw.records.len(), 3);
+        assert_eq!(raw.records.len(), 2);
+        assert_eq!(raw.other_records.len(), 1);
 
         assert_eq!(
             raw.records[0],
-            TableRecord::Named {
+            TableRecord {
                 address: 0x100,
-                name_offset: 0
+                label_offset: 0,
             }
         );
 
         assert_eq!(
             raw.records[1],
-            TableRecord::Named {
+            TableRecord{
                 address: 0x200,
-                name_offset: 6
+                label_offset: 6
             }
         );
 
         assert_eq!(
-            raw.records[2],
-            TableRecord::Unknown {
+            raw.other_records[0],
+            TableRecord{
                 address: 0x300,
-                raw_offset: 0xDEAD_BEEF
+                label_offset: 0xDEAD_BEEF
             }
         );
 
@@ -132,7 +135,7 @@ mod tests {
         let bytes =
             std::fs::read("../examples/ScriptList_Ar05Zn02.rlb").expect("read file should succeed");
         let raw = RawFile::parse(&bytes).expect("parse should succeed");
-        let rewritten = raw.write().expect("write should succeed");
+        let rewritten = raw.serialize_custom().expect("write should succeed");
         assert_eq!(bytes, rewritten);
     }
 }

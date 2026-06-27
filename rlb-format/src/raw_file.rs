@@ -6,69 +6,27 @@ use binrw::{BinRead, BinWrite};
 use crate::header::{ENTRY_SLOT_SIZE, HEADER_SIZE, Header, RELOCATION_ENTRY_SIZE};
 use rlb_error::{Error, Result};
 
-// --- Domain ---
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TableRecord {
-    Named { address: u32, name_offset: u32 },
-    Unknown { address: u32, raw_offset: u32 },
+#[derive(Debug, Clone, PartialEq, BinRead, BinWrite)]
+pub struct TableRecord {
+    pub address: u32,
+    pub label_offset: u32,
 }
 
-impl TableRecord {
-    pub fn address(&self) -> u32 {
-        match self {
-            TableRecord::Named { address, .. } | TableRecord::Unknown { address, .. } => *address,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, BinRead,BinWrite)]
+#[br(big)]
+#[bw(big)]
 pub struct RawFile {
     pub header: Header,
-    pub data: Vec<u8>,
-    pub relocation_table: Vec<u32>,
-    pub records: Vec<TableRecord>,
-    pub table_labels: Vec<u8>,
-}
-
-// --- Layout ---
-#[derive(Debug, Clone, BinRead, BinWrite)]
-#[brw(big)]
-struct NamedSlotRaw {
-    address: u32,
-    name_offset: u32,
-}
-
-#[derive(Debug, Clone, BinRead, BinWrite)]
-#[brw(big)]
-struct UnknownSlotRaw {
-    address: u32,
-    raw_offset: u32,
-}
-
-#[derive(BinRead)]
-#[br(big)]
-struct RawFileLayout {
-    header: Header,
     #[br(count = header.data_size)]
-    data: Vec<u8>,
+    pub data: Vec<u8>,
     #[br(count = header.num_relocs)]
-    relocations: Vec<u32>,
+    pub relocation_table: Vec<u32>,
     #[br(count = header.num_entries)]
-    named: Vec<NamedSlotRaw>,
+    pub records: Vec<TableRecord>,
     #[br(count = header.num_other_entries)]
-    unknown: Vec<UnknownSlotRaw>,
+    pub other_records: Vec<TableRecord>,
     #[br(parse_with = until_eof)]
-    table_labels: Vec<u8>,
-}
-#[derive(BinWrite)]
-#[bw(big)]
-struct RawFileLayoutRef<'a> {
-    header: Header,
-    data: &'a [u8],
-    relocations: &'a [u32],
-    named: Vec<NamedSlotRaw>,
-    unknown: Vec<UnknownSlotRaw>,
-    table_labels: &'a [u8],
+    pub table_labels: Vec<u8>,
 }
 
 impl RawFile {
@@ -86,99 +44,49 @@ impl RawFile {
         }
         cursor.set_position(0);
 
-        let layout = RawFileLayout::read(&mut cursor).map_err(|_| Error::UnexpectedEof {
+        let layout = RawFile::read(&mut cursor).map_err(|_| Error::UnexpectedEof {
             context: "RLB file layout",
         })?;
 
-        let entries = layout
-            .named
-            .into_iter()
-            .map(|slot| TableRecord::Named {
-                address: slot.address,
-                name_offset: slot.name_offset,
-            })
-            .chain(layout.unknown.into_iter().map(|slot| TableRecord::Unknown {
-                address: slot.address,
-                raw_offset: slot.raw_offset,
-            }))
-            .collect();
+        let records = layout
+            .records
+            .into_iter().collect();
+        let other_records = layout.other_records.into_iter().collect();
+
 
         Ok(RawFile {
             header: layout.header,
             data: layout.data,
-            relocation_table: layout.relocations,
-            records: entries,
+            relocation_table: layout.relocation_table,
+            records,
+            other_records,
             table_labels: layout.table_labels,
         })
     }
 
-    pub fn write(&self) -> Result<Vec<u8>> {
-        let (named, unknown): (Vec<&TableRecord>, Vec<&TableRecord>) = self
-            .records
-            .iter()
-            .partition(|e| matches!(e, TableRecord::Named { .. }));
+    pub fn serialize_custom(&self) -> Result<Vec<u8>> {
+
 
         let reloc_offset = HEADER_SIZE as usize + self.data.len();
         let entries_offset =
             reloc_offset + self.relocation_table.len() * RELOCATION_ENTRY_SIZE as usize;
-        let table_labels_offset = entries_offset + self.records.len() * ENTRY_SLOT_SIZE as usize;
+        let table_labels_offset = entries_offset + (self.records.len() + self.other_records.len()) * ENTRY_SLOT_SIZE as usize;
         let file_size = table_labels_offset + self.table_labels.len();
 
         let header = Header {
             file_size: checked_u32(file_size, "file_size")?,
             data_size: checked_u32(self.data.len(), "data_size")?,
             num_relocs: checked_u32(self.relocation_table.len(), "num_relocs")?,
-            num_entries: checked_u32(named.len(), "num_entries")?,
-            num_other_entries: checked_u32(unknown.len(), "num_other_entries")?,
+            num_entries: checked_u32(self.records.len(), "num_entries")?,
+            num_other_entries: checked_u32(self.other_records.len(), "num_other_entries")?,
             reserved: self.header.reserved,
         };
         let expected_file_size = header.file_size;
-
-        let named = named
-            .into_iter()
-            .map(|slot| match *slot {
-                TableRecord::Named {
-                    address,
-                    name_offset,
-                } => NamedSlotRaw {
-                    address,
-                    name_offset,
-                },
-                TableRecord::Unknown { .. } => {
-                    unreachable!("partitioned as Named above")
-                }
-            })
-            .collect();
-        let unknown = unknown
-            .into_iter()
-            .map(|slot| match *slot {
-                TableRecord::Unknown {
-                    address,
-                    raw_offset,
-                } => UnknownSlotRaw {
-                    address,
-                    raw_offset,
-                },
-                TableRecord::Named { .. } => {
-                    unreachable!("partitioned as Unknown above")
-                }
-            })
-            .collect();
-
-        let layout = RawFileLayoutRef {
-            header,
-            data: &self.data,
-            relocations: self.relocation_table.as_slice(),
-            named,
-            unknown,
-            table_labels: &self.table_labels,
-        };
-
         let mut out = Vec::with_capacity(file_size);
         {
             let mut cursor = Cursor::new(&mut out);
-            layout
-                .write(&mut cursor)
+
+            self.write(&mut cursor)
                 .map_err(|_| Error::SerializationMismatch {
                     expected: expected_file_size,
                     actual: 0,

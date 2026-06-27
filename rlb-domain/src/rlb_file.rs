@@ -24,6 +24,7 @@ pub struct RLBFile {
     tables: SlotMap<TableId, Table>,
     relocation_table: RelocationTable,
     toc: Vec<TocSlot>,
+    other_toc: Vec<TocSlot>,
     labels: SlotMap<LabelId, String>,
 }
 
@@ -34,59 +35,18 @@ impl RLBFile {
             data,
             relocation_table,
             records,
+            other_records,
             table_labels,
         } = raw;
         let mut toc: Vec<TocSlot> = Vec::with_capacity(records.len());
+        let mut other_toc: Vec<TocSlot> = Vec::with_capacity(other_records.len());
         let mut strings: SlotMap<StringId, String> = SlotMap::with_key();
         let mut tables: SlotMap<TableId, Table> = SlotMap::with_key();
         let mut labels = SlotMap::with_key();
         let relocations = RelocationTable::from_raw(relocation_table);
         //TODO: sort by address
-        for record in records {
-            match record {
-                TableRecord::Named {
-                    address,
-                    name_offset,
-                }
-                | TableRecord::Unknown {
-                    address,
-                    raw_offset: name_offset,
-                } => {
-                    let name = resolve_string_from_raw_data(&table_labels, name_offset as usize)?;
-                    let mut resolve_string = |offset: u32| -> Result<StringId> {
-                        //TODO: better string interning
-                        let s = resolve_string_from_raw_data(&data, offset as usize)?;
-                        let exist = strings
-                            .iter()
-                            .find(|(_id, string)| **string == s)
-                            .map(|(id, _string)| id);
-                        match exist {
-                            Some(id) => Ok(id),
-
-                            _ => Ok(strings.insert(s)),
-                        }
-                    };
-                    let mut is_relocated =
-                        |offset: u32| -> bool { relocations.is_relocated(offset) };
-
-                    let table = Table::resolve(
-                        &name,
-                        &data,
-                        address as usize,
-                        &mut resolve_string,
-                        &mut is_relocated,
-                    )?;
-
-                    let table_id = tables.insert(table);
-                    let label_id = labels.insert(name);
-
-                    toc.push(TocSlot {
-                        table: table_id,
-                        label: Some(label_id),
-                    });
-                }
-            }
-        }
+        build_records(records, &*data, &*table_labels, &mut strings, &mut tables, &mut labels, &mut toc, &relocations);
+        build_records(other_records, &*data, &*table_labels, &mut strings, &mut tables, &mut labels, &mut other_toc, &relocations);
 
         Ok(Self {
             header,
@@ -94,6 +54,7 @@ impl RLBFile {
             tables,
             relocation_table: relocations,
             toc,
+            other_toc,
             labels,
         })
     }
@@ -101,4 +62,51 @@ impl RLBFile {
     pub fn parse(bytes: &[u8]) -> Result<Self> {
         Self::from_raw(RawFile::parse(bytes)?)
     }
+}
+
+fn build_records(
+    records: Vec<TableRecord>,
+    data: &[u8],
+    table_labels: &[u8],
+    strings: &mut SlotMap<StringId, String>,
+    tables: &mut SlotMap<TableId, Table>,
+    labels: &mut SlotMap<LabelId, String>,
+    tocs: &mut Vec<TocSlot>,
+    relocations: &RelocationTable,
+) -> Result<()>{
+    for record in records{
+        let name = resolve_string_from_raw_data(&table_labels, record.label_offset as usize)?;
+        let mut resolve_string = |offset: u32| -> Result<StringId> {
+            //TODO: better string interning
+            let s = resolve_string_from_raw_data(&data, offset as usize)?;
+            let exist = strings
+                .iter()
+                .find(|(_id, string)| **string == s)
+                .map(|(id, _string)| id);
+            match exist {
+                Some(id) => Ok(id),
+
+                _ => Ok(strings.insert(s)),
+            }
+        };
+        let mut is_relocated =
+            |offset: u32| -> bool { relocations.is_relocated(offset) };
+
+        let table = Table::resolve(
+            &name,
+            &data,
+            record.address as usize,
+            &mut resolve_string,
+            &mut is_relocated,
+        )?;
+
+        let table_id = tables.insert(table);
+        let label_id = labels.insert(name);
+
+        tocs.push(TocSlot {
+            table: table_id,
+            label: Some(label_id),
+        });
+    }
+    Ok(())
 }
