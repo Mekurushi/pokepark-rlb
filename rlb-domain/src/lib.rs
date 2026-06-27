@@ -2,6 +2,7 @@ mod entry_schemas;
 mod macros;
 mod relocation;
 mod rlb_file;
+mod string_pool;
 mod table;
 pub mod table_view;
 mod util;

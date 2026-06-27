@@ -1,4 +1,5 @@
 use crate::relocation::RelocationTable;
+use crate::string_pool::StringPool;
 use crate::table::Table;
 use crate::util::resolve_string_from_raw_data;
 use rlb_error::Result;
@@ -19,7 +20,7 @@ pub struct TocSlot {
 
 #[derive(Debug, Clone)]
 pub struct RLBFile {
-    strings: SlotMap<StringId, String>,
+    string_pool: StringPool,
     tables: SlotMap<TableId, Table>,
     relocation_table: RelocationTable,
     toc: Vec<TocSlot>,
@@ -39,7 +40,7 @@ impl RLBFile {
         } = raw;
         let mut toc: Vec<TocSlot> = Vec::with_capacity(records.len());
         let mut other_toc: Vec<TocSlot> = Vec::with_capacity(other_records.len());
-        let mut strings: SlotMap<StringId, String> = SlotMap::with_key();
+        let mut string_pool = StringPool::new();
         let mut tables: SlotMap<TableId, Table> = SlotMap::with_key();
         let mut labels = SlotMap::with_key();
         let relocations = RelocationTable::from_raw(relocation_table);
@@ -48,7 +49,7 @@ impl RLBFile {
             records,
             &*data,
             &*table_labels,
-            &mut strings,
+            &mut string_pool,
             &mut tables,
             &mut labels,
             &mut toc,
@@ -56,9 +57,9 @@ impl RLBFile {
         )?;
         build_records(
             other_records,
-            &*data,
-            &*table_labels,
-            &mut strings,
+            &data,
+            &table_labels,
+            &mut string_pool,
             &mut tables,
             &mut labels,
             &mut other_toc,
@@ -66,7 +67,7 @@ impl RLBFile {
         )?;
 
         Ok(Self {
-            strings,
+            string_pool,
             tables,
             relocation_table: relocations,
             toc,
@@ -85,32 +86,24 @@ fn build_records(
     records: Vec<TableRecord>,
     data: &[u8],
     table_labels: &[u8],
-    strings: &mut SlotMap<StringId, String>,
+    strings: &mut StringPool,
     tables: &mut SlotMap<TableId, Table>,
     labels: &mut SlotMap<LabelId, String>,
     tocs: &mut Vec<TocSlot>,
     relocations: &RelocationTable,
 ) -> Result<()> {
     for record in records {
-        let name = resolve_string_from_raw_data(&table_labels, record.label_offset as usize)?;
+        let name = resolve_string_from_raw_data(table_labels, record.label_offset as usize)?;
         let mut resolve_string = |offset: u32| -> Result<StringId> {
             //TODO: better string interning
-            let s = resolve_string_from_raw_data(&data, offset as usize)?;
-            let exist = strings
-                .iter()
-                .find(|(_id, string)| **string == s)
-                .map(|(id, _string)| id);
-            match exist {
-                Some(id) => Ok(id),
-
-                _ => Ok(strings.insert(s)),
-            }
+            let s = resolve_string_from_raw_data(data, offset as usize)?;
+            Ok(strings.intern(s))
         };
         let mut is_relocated = |offset: u32| -> bool { relocations.is_relocated(offset) };
 
         let table = Table::resolve(
             &name,
-            &data,
+            data,
             record.address as usize,
             &mut resolve_string,
             &mut is_relocated,
