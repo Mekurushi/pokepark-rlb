@@ -2,7 +2,7 @@ use crate::relocation::RelocationTable;
 use crate::table::Table;
 use crate::util::resolve_string_from_raw_data;
 use rlb_error::Result;
-use rlb_format::{Header, RawFile, TableRecord};
+use rlb_format::{RawFile, TableRecord};
 use slotmap::SlotMap;
 
 slotmap::new_key_type! {
@@ -19,7 +19,6 @@ pub struct TocSlot {
 
 #[derive(Debug, Clone)]
 pub struct RLBFile {
-    header: Header,
     strings: SlotMap<StringId, String>,
     tables: SlotMap<TableId, Table>,
     relocation_table: RelocationTable,
@@ -31,7 +30,7 @@ pub struct RLBFile {
 impl RLBFile {
     pub fn from_raw(raw: RawFile) -> Result<Self> {
         let RawFile {
-            header,
+            header: _header,
             data,
             relocation_table,
             records,
@@ -54,7 +53,7 @@ impl RLBFile {
             &mut labels,
             &mut toc,
             &relocations,
-        );
+        )?;
         build_records(
             other_records,
             &*data,
@@ -64,10 +63,9 @@ impl RLBFile {
             &mut labels,
             &mut other_toc,
             &relocations,
-        );
+        )?;
 
         Ok(Self {
-            header,
             strings,
             tables,
             relocation_table: relocations,
@@ -82,6 +80,7 @@ impl RLBFile {
     }
 }
 
+// TODO: temporary solution until better way to handle building is known
 fn build_records(
     records: Vec<TableRecord>,
     data: &[u8],
