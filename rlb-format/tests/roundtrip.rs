@@ -69,9 +69,7 @@ mod tests {
     fn parse_then_write_round_trips_byte_for_byte() {
         for original in [single_entry_file_bytes(), multi_entry_file_bytes()] {
             let raw = RawFile::parse(&original).expect("parse should succeed");
-            let rewritten = raw
-                .serialize_custom()
-                .expect("write should succeed");
+            let rewritten = raw.serialize_custom().expect("write should succeed");
 
             assert_eq!(original, rewritten);
         }
@@ -95,7 +93,7 @@ mod tests {
 
         assert_eq!(
             raw.records[1],
-            TableRecord{
+            TableRecord {
                 address: 0x200,
                 label_offset: 6
             }
@@ -103,7 +101,7 @@ mod tests {
 
         assert_eq!(
             raw.other_records[0],
-            TableRecord{
+            TableRecord {
                 address: 0x300,
                 label_offset: 0xDEAD_BEEF
             }

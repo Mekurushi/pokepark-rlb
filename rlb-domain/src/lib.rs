@@ -1,11 +1,11 @@
 mod entry_schemas;
 mod macros;
+mod relocation;
 mod rlb_file;
 mod table;
 pub mod table_view;
 mod util;
 mod value;
-mod relocation;
 
 pub use entry_schemas::{FieldDescriptor, TableEntry};
 pub use rlb_file::RLBFile;

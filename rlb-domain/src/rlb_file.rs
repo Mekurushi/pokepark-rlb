@@ -1,9 +1,9 @@
+use crate::relocation::RelocationTable;
 use crate::table::Table;
 use crate::util::resolve_string_from_raw_data;
 use rlb_error::Result;
 use rlb_format::{Header, RawFile, TableRecord};
 use slotmap::SlotMap;
-use crate::relocation::RelocationTable;
 
 slotmap::new_key_type! {
     pub struct TableId;
@@ -45,8 +45,26 @@ impl RLBFile {
         let mut labels = SlotMap::with_key();
         let relocations = RelocationTable::from_raw(relocation_table);
         //TODO: sort by address
-        build_records(records, &*data, &*table_labels, &mut strings, &mut tables, &mut labels, &mut toc, &relocations);
-        build_records(other_records, &*data, &*table_labels, &mut strings, &mut tables, &mut labels, &mut other_toc, &relocations);
+        build_records(
+            records,
+            &*data,
+            &*table_labels,
+            &mut strings,
+            &mut tables,
+            &mut labels,
+            &mut toc,
+            &relocations,
+        );
+        build_records(
+            other_records,
+            &*data,
+            &*table_labels,
+            &mut strings,
+            &mut tables,
+            &mut labels,
+            &mut other_toc,
+            &relocations,
+        );
 
         Ok(Self {
             header,
@@ -73,8 +91,8 @@ fn build_records(
     labels: &mut SlotMap<LabelId, String>,
     tocs: &mut Vec<TocSlot>,
     relocations: &RelocationTable,
-) -> Result<()>{
-    for record in records{
+) -> Result<()> {
+    for record in records {
         let name = resolve_string_from_raw_data(&table_labels, record.label_offset as usize)?;
         let mut resolve_string = |offset: u32| -> Result<StringId> {
             //TODO: better string interning
@@ -89,8 +107,7 @@ fn build_records(
                 _ => Ok(strings.insert(s)),
             }
         };
-        let mut is_relocated =
-            |offset: u32| -> bool { relocations.is_relocated(offset) };
+        let mut is_relocated = |offset: u32| -> bool { relocations.is_relocated(offset) };
 
         let table = Table::resolve(
             &name,

@@ -12,7 +12,7 @@ pub struct TableRecord {
     pub label_offset: u32,
 }
 
-#[derive(Debug, Clone, BinRead,BinWrite)]
+#[derive(Debug, Clone, BinRead, BinWrite)]
 #[br(big)]
 #[bw(big)]
 pub struct RawFile {
@@ -48,11 +48,8 @@ impl RawFile {
             context: "RLB file layout",
         })?;
 
-        let records = layout
-            .records
-            .into_iter().collect();
+        let records = layout.records.into_iter().collect();
         let other_records = layout.other_records.into_iter().collect();
-
 
         Ok(RawFile {
             header: layout.header,
@@ -65,12 +62,11 @@ impl RawFile {
     }
 
     pub fn serialize_custom(&self) -> Result<Vec<u8>> {
-
-
         let reloc_offset = HEADER_SIZE as usize + self.data.len();
         let entries_offset =
             reloc_offset + self.relocation_table.len() * RELOCATION_ENTRY_SIZE as usize;
-        let table_labels_offset = entries_offset + (self.records.len() + self.other_records.len()) * ENTRY_SLOT_SIZE as usize;
+        let table_labels_offset = entries_offset
+            + (self.records.len() + self.other_records.len()) * ENTRY_SLOT_SIZE as usize;
         let file_size = table_labels_offset + self.table_labels.len();
 
         let header = Header {
