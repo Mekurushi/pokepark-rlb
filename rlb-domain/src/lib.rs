@@ -1,4 +1,5 @@
 mod entry_schemas;
+mod macros;
 mod rlb_file;
 mod table;
 pub mod table_view;
