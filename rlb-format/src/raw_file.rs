@@ -4,7 +4,6 @@ use std::io::Cursor;
 use binrw::{BinRead, BinWrite};
 
 use crate::header::{ENTRY_SLOT_SIZE, HEADER_SIZE, Header, RELOCATION_ENTRY_SIZE};
-use crate::relocation::RelocationTable;
 use rlb_error::{Error, Result};
 
 // --- Domain ---
@@ -26,7 +25,7 @@ impl TableRecord {
 pub struct RawFile {
     pub header: Header,
     pub data: Vec<u8>,
-    pub relocation_table: RelocationTable,
+    pub relocation_table: Vec<u32>,
     pub records: Vec<TableRecord>,
     pub table_labels: Vec<u8>,
 }
@@ -107,7 +106,7 @@ impl RawFile {
         Ok(RawFile {
             header: layout.header,
             data: layout.data,
-            relocation_table: RelocationTable::from_raw(layout.relocations),
+            relocation_table: layout.relocations,
             records: entries,
             table_labels: layout.table_labels,
         })

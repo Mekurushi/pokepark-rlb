@@ -106,7 +106,7 @@ mod tests {
             }
         );
 
-        let reloc_sites: Vec<u32> = raw.relocation_table.sites().collect();
+        let reloc_sites: Vec<u32> = raw.relocation_table.into_iter().collect();
         assert_eq!(reloc_sites, vec![4, 0]);
     }
 

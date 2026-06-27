@@ -1,8 +1,9 @@
 use crate::table::Table;
 use crate::util::resolve_string_from_raw_data;
 use rlb_error::Result;
-use rlb_format::{Header, RawFile, RelocationTable, TableRecord};
+use rlb_format::{Header, RawFile, TableRecord};
 use slotmap::SlotMap;
+use crate::relocation::RelocationTable;
 
 slotmap::new_key_type! {
     pub struct TableId;
@@ -39,7 +40,7 @@ impl RLBFile {
         let mut strings: SlotMap<StringId, String> = SlotMap::with_key();
         let mut tables: SlotMap<TableId, Table> = SlotMap::with_key();
         let mut labels = SlotMap::with_key();
-
+        let relocations = RelocationTable::from_raw(relocation_table);
         //TODO: sort by address
         for record in records {
             match record {
@@ -66,7 +67,7 @@ impl RLBFile {
                         }
                     };
                     let mut is_relocated =
-                        |offset: u32| -> bool { relocation_table.is_relocated(offset) };
+                        |offset: u32| -> bool { relocations.is_relocated(offset) };
 
                     let table = Table::resolve(
                         &name,
@@ -91,7 +92,7 @@ impl RLBFile {
             header,
             strings,
             tables,
-            relocation_table,
+            relocation_table: relocations,
             toc,
             labels,
         })
