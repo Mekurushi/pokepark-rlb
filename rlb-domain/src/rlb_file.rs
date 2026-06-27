@@ -5,6 +5,7 @@ use crate::util::resolve_string_from_raw_data;
 use rlb_error::Result;
 use rlb_format::{RawFile, TableRecord};
 use slotmap::SlotMap;
+use crate::label_pool::LabelPool;
 
 slotmap::new_key_type! {
     pub struct TableId;
@@ -25,7 +26,7 @@ pub struct RLBFile {
     relocation_table: RelocationTable,
     toc: Vec<TocSlot>,
     other_toc: Vec<TocSlot>,
-    labels: SlotMap<LabelId, String>,
+    label_pool: LabelPool,
 }
 
 impl RLBFile {
@@ -42,7 +43,7 @@ impl RLBFile {
         let mut other_toc: Vec<TocSlot> = Vec::with_capacity(other_records.len());
         let mut string_pool = StringPool::new();
         let mut tables: SlotMap<TableId, Table> = SlotMap::with_key();
-        let mut labels = SlotMap::with_key();
+        let mut label_pool = LabelPool::new();
         let relocations = RelocationTable::from_raw(relocation_table);
         //TODO: sort by address
         build_records(
@@ -51,7 +52,7 @@ impl RLBFile {
             &*table_labels,
             &mut string_pool,
             &mut tables,
-            &mut labels,
+            &mut label_pool,
             &mut toc,
             &relocations,
         )?;
@@ -61,7 +62,7 @@ impl RLBFile {
             &table_labels,
             &mut string_pool,
             &mut tables,
-            &mut labels,
+            &mut label_pool,
             &mut other_toc,
             &relocations,
         )?;
@@ -72,7 +73,7 @@ impl RLBFile {
             relocation_table: relocations,
             toc,
             other_toc,
-            labels,
+            label_pool,
         })
     }
 
@@ -88,7 +89,7 @@ fn build_records(
     table_labels: &[u8],
     strings: &mut StringPool,
     tables: &mut SlotMap<TableId, Table>,
-    labels: &mut SlotMap<LabelId, String>,
+    labels: &mut LabelPool,
     tocs: &mut Vec<TocSlot>,
     relocations: &RelocationTable,
 ) -> Result<()> {
@@ -110,7 +111,7 @@ fn build_records(
         )?;
 
         let table_id = tables.insert(table);
-        let label_id = labels.insert(name);
+        let label_id = labels.intern(name);
 
         tocs.push(TocSlot {
             table: table_id,
