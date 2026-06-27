@@ -40,6 +40,7 @@ impl RLBFile {
         let mut tables: SlotMap<TableId, Table> = SlotMap::with_key();
         let mut labels = SlotMap::with_key();
 
+        //TODO: sort by address
         for record in records {
             match record {
                 TableRecord::Named {
