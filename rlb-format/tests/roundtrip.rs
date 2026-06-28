@@ -107,7 +107,7 @@ mod tests {
             }
         );
 
-        let reloc_sites: Vec<u32> = raw.relocation_table().iter().copied().collect();
+        let reloc_sites: Vec<u32> = raw.relocation_table().clone();
         assert_eq!(reloc_sites, vec![4, 0]);
     }
 

@@ -1,5 +1,6 @@
-use crate::TableEntry;
 use crate::rlb_file::StringId;
+use crate::string_pool::SerializedStringPoolContext;
+use crate::TableEntry;
 use rlb_error::{Error, Result};
 
 #[derive(Debug, Clone)]
@@ -39,5 +40,24 @@ impl<T: TableEntry> TableView<T> {
             entries.push(record);
             offset += T::SIZE;
         }
+    }
+
+    pub(crate) fn serialize(
+        &self,
+        out: &mut Vec<u8>,
+        base_offset: usize,
+        strings: &SerializedStringPoolContext<StringId>,
+        relocations: &mut Vec<u32>,
+    ) -> Result<()> {
+        for (i, entry) in self.entries.iter().enumerate() {
+            let entry_offset = base_offset + i * T::SIZE;
+            entry.write(out, entry_offset, strings, relocations)?;
+        }
+
+        let terminator_offset = base_offset + self.entries.len() * T::SIZE;
+        self.terminator
+            .write(out, terminator_offset, strings, relocations)?;
+
+        Ok(())
     }
 }

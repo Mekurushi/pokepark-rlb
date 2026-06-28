@@ -1,8 +1,9 @@
 pub mod script_list;
 pub mod single_pointer;
 
-use crate::Value;
 use crate::rlb_file::StringId;
+use crate::string_pool::SerializedStringPoolContext;
+use crate::Value;
 use rlb_error::Result;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -29,6 +30,14 @@ pub trait TableEntry: Sized + std::fmt::Debug {
     where
         R: FnMut(u32) -> Result<StringId>,
         E: FnMut(u32) -> bool;
+
+    fn write(
+        &self,
+        out: &mut Vec<u8>,
+        base_offset: usize,
+        strings: &SerializedStringPoolContext<StringId>,
+        relocations: &mut Vec<u32>,
+    ) -> Result<()>;
 }
 #[macro_export]
 macro_rules! impl_table_entry_wrapper {
@@ -90,6 +99,16 @@ macro_rules! impl_table_entry_wrapper {
                     resolve_string,
                     is_relocated,
                 )?))
+            }
+
+            fn write(
+                &self,
+                out: &mut Vec<u8>,
+                base_offset: usize,
+                strings: &SerializedStringPoolContext<StringId>,
+                relocations: &mut Vec<u32>,
+            ) -> Result<()> {
+                self.0.write(out, base_offset, strings, relocations)
             }
         }
     };

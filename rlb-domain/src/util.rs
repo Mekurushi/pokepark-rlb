@@ -2,6 +2,7 @@ use encoding_rs::SHIFT_JIS;
 use rlb_error::{Error, Result};
 
 use crate::rlb_file::StringId;
+use crate::string_pool::SerializedStringPoolContext;
 use crate::Value;
 
 pub(crate) fn checked_u32(value: usize, context: &'static str) -> Result<u32> {
@@ -46,6 +47,35 @@ where
     } else {
         Ok(Value::Integer(raw))
     }
+}
+pub(crate) fn write_value(
+    value: Value,
+    field_offset: usize,
+    base_offset: usize,
+    out: &mut Vec<u8>,
+    strings: &SerializedStringPoolContext<StringId>,
+    relocations: &mut Vec<u32>,
+) -> Result<()> {
+    match value {
+        Value::Integer(v) => {
+            out.extend_from_slice(&v.to_le_bytes());
+        }
+        Value::Pointer(string_id) => {
+            let string_offset = strings.offset_of(string_id).ok_or_else(|| {
+                Error::Validation(format!(
+                    "string ID {string_id:?} not found in serialized string pool"
+                ))
+            })?;
+            out.extend_from_slice(
+                &(checked_u32(string_offset, "converting string offset to u32")?).to_be_bytes(),
+            );
+            relocations.push(checked_u32(
+                base_offset + field_offset,
+                "calculating field offset for relocation table",
+            )?);
+        }
+    }
+    Ok(())
 }
 
 pub(crate) fn read_u32(data: &[u8], offset: usize) -> Result<u32> {

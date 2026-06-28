@@ -8,6 +8,21 @@ pub struct StringPool<K: Key> {
     map: SlotMap<K, String>,
     lookup: HashMap<String, K>,
 }
+#[derive(Debug)]
+pub struct SerializedStringPoolContext<K: Key> {
+    data: Vec<u8>,
+    id_to_offset: HashMap<K, usize>,
+}
+impl<K: Key> SerializedStringPoolContext<K> {
+    pub(crate) fn data(&self) -> &[u8] {
+        &self.data
+    }
+
+    pub(crate) fn offset_of(&self, id: K) -> Option<usize> {
+        self.id_to_offset.get(&id).copied()
+    }
+}
+
 impl<K: Key> StringPool<K> {
     pub fn new() -> StringPool<K> {
         Self {
@@ -25,7 +40,7 @@ impl<K: Key> StringPool<K> {
             id
         }
     }
-    pub fn serialize(&self) -> Result<(Vec<u8>, HashMap<K, usize>)> {
+    pub fn serialize(&self) -> Result<SerializedStringPoolContext<K>> {
         let mut string_data: Vec<u8> = Vec::new();
         let mut offsets: HashMap<K, usize> = HashMap::new();
 
@@ -43,10 +58,14 @@ impl<K: Key> StringPool<K> {
             }
 
             string_data.extend_from_slice(&encoded);
+            //TODO: original files have a unknown alignment, check out if there is a system behind
             string_data.push(0);
 
             offsets.insert(id, offset);
         }
-        Ok((string_data, offsets))
+        Ok(SerializedStringPoolContext {
+            data: string_data,
+            id_to_offset: offsets,
+        })
     }
 }

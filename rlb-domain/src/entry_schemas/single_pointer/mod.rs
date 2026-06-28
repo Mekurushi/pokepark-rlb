@@ -1,6 +1,7 @@
-use crate::TableEntry;
 use crate::rlb_file::StringId;
-use crate::util::value_at;
+use crate::string_pool::SerializedStringPoolContext;
+use crate::util::{value_at, write_value};
+use crate::TableEntry;
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
 
@@ -47,6 +48,24 @@ impl TableEntry for SinglePointerEntry {
         Ok(Self {
             script_name: value_at(data, 0x00, base_offset, resolve_string, is_relocated)?,
         })
+    }
+    fn write(
+        &self,
+        out: &mut Vec<u8>,
+        base_offset: usize,
+        strings: &SerializedStringPoolContext<StringId>,
+        relocations: &mut Vec<u32>,
+    ) -> Result<()> {
+        write_value(
+            self.script_name,
+            0x00,
+            base_offset,
+            out,
+            strings,
+            relocations,
+        )?;
+
+        Ok(())
     }
 }
 

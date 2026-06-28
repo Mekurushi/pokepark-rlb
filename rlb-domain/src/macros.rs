@@ -75,6 +75,21 @@ _ => Ok(Self::Unknown)
 }
 
 }
+    pub fn serialize(
+    &self,
+    out: &mut Vec<u8>,
+    base_offset: usize,
+    strings: &crate::string_pool::SerializedStringPoolContext<StringId>,
+    relocations: &mut Vec<u32>,
+) -> Result<()> {
+    match self {
+        $(
+            Self::$schema(view) => view.serialize(out, base_offset, strings, relocations),
+        )*
+        Self::Unknown => Ok(()),
+    }
+}
+
 
 
 }
