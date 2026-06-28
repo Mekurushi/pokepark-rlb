@@ -80,11 +80,11 @@ mod tests {
         let bytes = multi_entry_file_bytes();
         let raw = RawFile::parse(&bytes).expect("parse should succeed");
 
-        assert_eq!(raw.records.len(), 2);
-        assert_eq!(raw.other_records.len(), 1);
+        assert_eq!(raw.records().len(), 2);
+        assert_eq!(raw.other_records().len(), 1);
 
         assert_eq!(
-            raw.records[0],
+            raw.records()[0],
             TableRecord {
                 address: 0x100,
                 label_offset: 0,
@@ -92,7 +92,7 @@ mod tests {
         );
 
         assert_eq!(
-            raw.records[1],
+            raw.records()[1],
             TableRecord {
                 address: 0x200,
                 label_offset: 6
@@ -100,14 +100,14 @@ mod tests {
         );
 
         assert_eq!(
-            raw.other_records[0],
+            raw.other_records()[0],
             TableRecord {
                 address: 0x300,
                 label_offset: 0xDEAD_BEEF
             }
         );
 
-        let reloc_sites: Vec<u32> = raw.relocation_table.into_iter().collect();
+        let reloc_sites: Vec<u32> = raw.relocation_table().iter().copied().collect();
         assert_eq!(reloc_sites, vec![4, 0]);
     }
 

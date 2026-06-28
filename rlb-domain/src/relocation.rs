@@ -7,9 +7,9 @@ pub struct RelocationTable {
 }
 
 impl RelocationTable {
-    pub fn from_raw(sites: Vec<u32>) -> Self {
+    pub fn from_raw(sites: &[u32]) -> Self {
         let lookup = sites.iter().copied().collect();
-        Self { sites, lookup }
+        Self { sites: Vec::from(sites), lookup }
     }
 
     pub fn len(&self) -> usize {
@@ -41,7 +41,7 @@ mod tests {
 
     #[test]
     fn is_relocated_reflects_exactly_the_site_list() {
-        let table = RelocationTable::from_raw(vec![0x10, 0x40]);
+        let table = RelocationTable::from_raw(&[0x10, 0x40]);
 
         assert!(table.is_relocated(0x10));
         assert!(table.is_relocated(0x40));
@@ -53,7 +53,7 @@ mod tests {
 
     #[test]
     fn sites_preserves_on_disk_order_for_round_tripping() {
-        let table = RelocationTable::from_raw(vec![0x40, 0x10, 0x30]);
+        let table = RelocationTable::from_raw(&[0x40, 0x10, 0x30]);
         let sites: Vec<u32> = table.sites().collect();
         assert_eq!(sites, vec![0x40, 0x10, 0x30]);
     }

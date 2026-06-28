@@ -3,7 +3,7 @@ use std::io::Cursor;
 
 use binrw::{BinRead, BinWrite};
 
-use crate::header::{ENTRY_SLOT_SIZE, HEADER_SIZE, Header, RELOCATION_ENTRY_SIZE};
+use crate::header::{Header};
 use rlb_error::{Error, Result};
 
 #[derive(Debug, Clone, PartialEq, BinRead, BinWrite)]
@@ -16,17 +16,17 @@ pub struct TableRecord {
 #[br(big)]
 #[bw(big)]
 pub struct RawFile {
-    pub header: Header,
-    #[br(count = header.data_size)]
-    pub data: Vec<u8>,
-    #[br(count = header.num_relocs)]
-    pub relocation_table: Vec<u32>,
-    #[br(count = header.num_entries)]
-    pub records: Vec<TableRecord>,
-    #[br(count = header.num_other_entries)]
-    pub other_records: Vec<TableRecord>,
+    header: Header,
+    #[br(count = header.data_size())]
+    data: Vec<u8>,
+    #[br(count = header.num_relocs())]
+    relocation_table: Vec<u32>,
+    #[br(count = header.num_entries())]
+    records: Vec<TableRecord>,
+    #[br(count = header.num_other_entries())]
+    other_records: Vec<TableRecord>,
     #[br(parse_with = until_eof)]
-    pub table_labels: Vec<u8>,
+    table_labels: Vec<u8>,
 }
 
 impl RawFile {
@@ -61,24 +61,21 @@ impl RawFile {
         })
     }
 
-    pub fn serialize_custom(&self) -> Result<Vec<u8>> {
-        let reloc_offset = HEADER_SIZE as usize + self.data.len();
-        let entries_offset =
-            reloc_offset + self.relocation_table.len() * RELOCATION_ENTRY_SIZE as usize;
-        let table_labels_offset = entries_offset
-            + (self.records.len() + self.other_records.len()) * ENTRY_SLOT_SIZE as usize;
-        let file_size = table_labels_offset + self.table_labels.len();
+    pub fn new(data: Vec<u8>, relocation_table: Vec<u32>, records: Vec<TableRecord>, other_records: Vec<TableRecord>, table_labels: Vec<u8>) -> Result<Self> {
+        let header = Header::from_data(&data,&relocation_table,&records,&other_records,&table_labels)?;
+        Ok(Self{
+            header,
+            data,
+            relocation_table,
+            records,
+            other_records,
+            table_labels,
+        })
+    }
 
-        let header = Header {
-            file_size: checked_u32(file_size, "file_size")?,
-            data_size: checked_u32(self.data.len(), "data_size")?,
-            num_relocs: checked_u32(self.relocation_table.len(), "num_relocs")?,
-            num_entries: checked_u32(self.records.len(), "num_entries")?,
-            num_other_entries: checked_u32(self.other_records.len(), "num_other_entries")?,
-            reserved: self.header.reserved,
-        };
-        let expected_file_size = header.file_size;
-        let mut out = Vec::with_capacity(file_size);
+    pub fn serialize_custom(&self) -> Result<Vec<u8>> {
+        let expected_file_size = self.header.file_size();
+        let mut out = Vec::with_capacity(expected_file_size as usize);
         {
             let mut cursor = Cursor::new(&mut out);
 
@@ -88,16 +85,30 @@ impl RawFile {
                     actual: 0,
                 })?;
         }
-
-        if out.len() != file_size {
-            return Err(Error::SerializationMismatch {
-                expected: expected_file_size,
-                actual: out.len(),
-            });
-        }
         Ok(out)
     }
-}
-fn checked_u32(value: usize, context: &'static str) -> Result<u32> {
-    u32::try_from(value).map_err(|_e| Error::ValueTooLarge { context, value })
+
+    pub fn header(&self) -> &Header {
+        &self.header
+    }
+
+    pub fn data(&self) -> &Vec<u8> {
+        &self.data
+    }
+
+    pub fn relocation_table(&self) -> &Vec<u32> {
+        &self.relocation_table
+    }
+
+    pub fn records(&self) -> &Vec<TableRecord> {
+        &self.records
+    }
+
+    pub fn other_records(&self) -> &Vec<TableRecord> {
+        &self.other_records
+    }
+
+    pub fn table_labels(&self) -> &Vec<u8> {
+        &self.table_labels
+    }
 }

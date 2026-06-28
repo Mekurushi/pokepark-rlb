@@ -1,12 +1,11 @@
+use crate::label_pool::LabelPool;
 use crate::relocation::RelocationTable;
 use crate::string_pool::StringPool;
 use crate::table::Table;
+use crate::table_collection::TableCollection;
 use crate::util::resolve_string_from_raw_data;
 use rlb_error::Result;
 use rlb_format::{RawFile, TableRecord};
-use slotmap::SlotMap;
-use crate::label_pool::LabelPool;
-use crate::table_collection::TableCollection;
 
 slotmap::new_key_type! {
     pub struct TableId;
@@ -31,15 +30,13 @@ pub struct RLBFile {
 }
 
 impl RLBFile {
-    pub fn from_raw(raw: RawFile) -> Result<Self> {
-        let RawFile {
-            header: _header,
-            data,
-            relocation_table,
-            records,
-            other_records,
-            table_labels,
-        } = raw;
+    pub fn from_raw(raw: &RawFile) -> Result<Self> {
+        let data = raw.data();
+        let relocation_table = raw.relocation_table();
+        let records = raw.records();
+        let other_records = raw.other_records();
+        let table_labels = raw.table_labels();
+
         let mut toc: Vec<TocSlot> = Vec::with_capacity(records.len());
         let mut other_toc: Vec<TocSlot> = Vec::with_capacity(other_records.len());
         let mut string_pool = StringPool::new();
@@ -49,8 +46,8 @@ impl RLBFile {
         //TODO: sort by address
         build_records(
             records,
-            &*data,
-            &*table_labels,
+            data,
+            table_labels,
             &mut string_pool,
             &mut table_collection,
             &mut label_pool,
@@ -59,8 +56,8 @@ impl RLBFile {
         )?;
         build_records(
             other_records,
-            &data,
-            &table_labels,
+            data,
+            table_labels,
             &mut string_pool,
             &mut table_collection,
             &mut label_pool,
@@ -79,13 +76,13 @@ impl RLBFile {
     }
 
     pub fn parse(bytes: &[u8]) -> Result<Self> {
-        Self::from_raw(RawFile::parse(bytes)?)
+        Self::from_raw(&RawFile::parse(bytes)?)
     }
 }
 
 // TODO: temporary solution until better way to handle building is known
 fn build_records(
-    records: Vec<TableRecord>,
+    records: &Vec<TableRecord>,
     data: &[u8],
     table_labels: &[u8],
     strings: &mut StringPool,
