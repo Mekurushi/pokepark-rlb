@@ -1,20 +1,21 @@
-use crate::rlb_file::StringId;
-use slotmap::SlotMap;
+use encoding_rs::SHIFT_JIS;
+use rlb_error::{Error, Result};
+use slotmap::{Key, SlotMap};
 use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
-pub struct StringPool {
-    map: SlotMap<StringId, String>,
-    lookup: HashMap<String, StringId>,
+pub struct StringPool<K: Key> {
+    map: SlotMap<K, String>,
+    lookup: HashMap<String, K>,
 }
-impl StringPool {
-    pub fn new() -> StringPool {
+impl<K: Key> StringPool<K> {
+    pub fn new() -> StringPool<K> {
         Self {
             map: SlotMap::with_key(),
             lookup: HashMap::new(),
         }
     }
-    pub fn intern(&mut self, string: String) -> StringId {
+    pub fn intern(&mut self, string: String) -> K {
         let existing_id = self.lookup.get(&string);
         if let Some(id) = existing_id {
             *id
@@ -23,5 +24,29 @@ impl StringPool {
             self.lookup.insert(string, id);
             id
         }
+    }
+    pub fn serialize(&self) -> Result<(Vec<u8>, HashMap<K, usize>)> {
+        let mut string_data: Vec<u8> = Vec::new();
+        let mut offsets: HashMap<K, usize> = HashMap::new();
+
+        for (id, s) in &self.map {
+            let offset = string_data.len();
+
+            let (encoded, _, had_errors) = SHIFT_JIS.encode(s);
+
+            if had_errors {
+                return Err(Error::InvalidUtf8 {
+                    context: "string/label pool (Shift-JIS encode failed)",
+                    offset,
+                    source: None,
+                });
+            }
+
+            string_data.extend_from_slice(&encoded);
+            string_data.push(0);
+
+            offsets.insert(id, offset);
+        }
+        Ok((string_data, offsets))
     }
 }

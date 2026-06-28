@@ -1,14 +1,14 @@
 use encoding_rs::SHIFT_JIS;
 use rlb_error::{Error, Result};
 
-use crate::Value;
 use crate::rlb_file::StringId;
+use crate::Value;
 
-pub(crate) fn checked_u32(value: usize, context: &'static str) -> rlb_error::Result<u32> {
+pub(crate) fn checked_u32(value: usize, context: &'static str) -> Result<u32> {
     u32::try_from(value).map_err(|_e| Error::ValueTooLarge { context, value })
 }
 
-pub(crate) fn resolve_string_from_raw_data(data: &[u8], index: usize) -> rlb_error::Result<String> {
+pub(crate) fn resolve_string_from_raw_data(data: &[u8], index: usize) -> Result<String> {
     let tail = data.get(index..).ok_or(Error::OffsetOutOfBounds {
         context: "string/label pool",
         offset: index,
@@ -34,7 +34,7 @@ pub(crate) fn value_at<R, E>(
     base_offset: usize,
     resolve_string: &mut R,
     is_relocated: &mut E,
-) -> rlb_error::Result<Value>
+) -> Result<Value>
 where
     R: FnMut(u32) -> Result<StringId>,
     E: FnMut(u32) -> bool,

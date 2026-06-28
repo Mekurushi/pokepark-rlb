@@ -1,4 +1,3 @@
-use crate::label_pool::LabelPool;
 use crate::relocation::RelocationTable;
 use crate::string_pool::StringPool;
 use crate::table::Table;
@@ -21,12 +20,12 @@ pub struct TocSlot {
 
 #[derive(Debug, Clone)]
 pub struct RLBFile {
-    string_pool: StringPool,
+    string_pool: StringPool<StringId>,
     table_collection: TableCollection,
     relocation_table: RelocationTable,
     toc: Vec<TocSlot>,
     other_toc: Vec<TocSlot>,
-    label_pool: LabelPool,
+    label_pool: StringPool<LabelId>,
 }
 
 impl RLBFile {
@@ -39,9 +38,9 @@ impl RLBFile {
 
         let mut toc: Vec<TocSlot> = Vec::with_capacity(records.len());
         let mut other_toc: Vec<TocSlot> = Vec::with_capacity(other_records.len());
-        let mut string_pool = StringPool::new();
+        let mut string_pool: StringPool<StringId> = StringPool::new();
         let mut table_collection: TableCollection = TableCollection::new();
-        let mut label_pool = LabelPool::new();
+        let mut label_pool: StringPool<LabelId> = StringPool::new();
         let relocations = RelocationTable::from_raw(relocation_table);
         //TODO: sort by address
         build_records(
@@ -85,16 +84,15 @@ fn build_records(
     records: &Vec<TableRecord>,
     data: &[u8],
     table_labels: &[u8],
-    strings: &mut StringPool,
+    strings: &mut StringPool<StringId>,
     tables: &mut TableCollection,
-    labels: &mut LabelPool,
+    labels: &mut StringPool<LabelId>,
     tocs: &mut Vec<TocSlot>,
     relocations: &RelocationTable,
 ) -> Result<()> {
     for record in records {
         let name = resolve_string_from_raw_data(table_labels, record.label_offset as usize)?;
         let mut resolve_string = |offset: u32| -> Result<StringId> {
-            //TODO: better string interning
             let s = resolve_string_from_raw_data(data, offset as usize)?;
             Ok(strings.intern(s))
         };

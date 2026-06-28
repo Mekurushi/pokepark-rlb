@@ -1,5 +1,4 @@
 mod entry_schemas;
-mod label_pool;
 mod macros;
 mod relocation;
 mod rlb_file;
