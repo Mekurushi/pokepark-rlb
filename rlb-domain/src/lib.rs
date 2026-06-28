@@ -8,6 +8,7 @@ pub mod table_view;
 mod util;
 mod value;
 mod label_pool;
+mod table_collection;
 
 pub use entry_schemas::{FieldDescriptor, TableEntry};
 pub use rlb_file::RLBFile;

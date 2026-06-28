@@ -6,6 +6,7 @@ use rlb_error::Result;
 use rlb_format::{RawFile, TableRecord};
 use slotmap::SlotMap;
 use crate::label_pool::LabelPool;
+use crate::table_collection::TableCollection;
 
 slotmap::new_key_type! {
     pub struct TableId;
@@ -22,7 +23,7 @@ pub struct TocSlot {
 #[derive(Debug, Clone)]
 pub struct RLBFile {
     string_pool: StringPool,
-    tables: SlotMap<TableId, Table>,
+    table_collection: TableCollection,
     relocation_table: RelocationTable,
     toc: Vec<TocSlot>,
     other_toc: Vec<TocSlot>,
@@ -42,7 +43,7 @@ impl RLBFile {
         let mut toc: Vec<TocSlot> = Vec::with_capacity(records.len());
         let mut other_toc: Vec<TocSlot> = Vec::with_capacity(other_records.len());
         let mut string_pool = StringPool::new();
-        let mut tables: SlotMap<TableId, Table> = SlotMap::with_key();
+        let mut table_collection: TableCollection = TableCollection::new();
         let mut label_pool = LabelPool::new();
         let relocations = RelocationTable::from_raw(relocation_table);
         //TODO: sort by address
@@ -51,7 +52,7 @@ impl RLBFile {
             &*data,
             &*table_labels,
             &mut string_pool,
-            &mut tables,
+            &mut table_collection,
             &mut label_pool,
             &mut toc,
             &relocations,
@@ -61,7 +62,7 @@ impl RLBFile {
             &data,
             &table_labels,
             &mut string_pool,
-            &mut tables,
+            &mut table_collection,
             &mut label_pool,
             &mut other_toc,
             &relocations,
@@ -69,7 +70,7 @@ impl RLBFile {
 
         Ok(Self {
             string_pool,
-            tables,
+            table_collection,
             relocation_table: relocations,
             toc,
             other_toc,
@@ -88,7 +89,7 @@ fn build_records(
     data: &[u8],
     table_labels: &[u8],
     strings: &mut StringPool,
-    tables: &mut SlotMap<TableId, Table>,
+    tables: &mut TableCollection,
     labels: &mut LabelPool,
     tocs: &mut Vec<TocSlot>,
     relocations: &RelocationTable,
