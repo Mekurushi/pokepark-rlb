@@ -3,7 +3,7 @@ use std::io::Cursor;
 
 use binrw::{BinRead, BinWrite};
 
-use crate::header::{Header};
+use crate::header::Header;
 use rlb_error::{Error, Result};
 
 #[derive(Debug, Clone, PartialEq, BinRead, BinWrite)]
@@ -61,9 +61,21 @@ impl RawFile {
         })
     }
 
-    pub fn new(data: Vec<u8>, relocation_table: Vec<u32>, records: Vec<TableRecord>, other_records: Vec<TableRecord>, table_labels: Vec<u8>) -> Result<Self> {
-        let header = Header::from_data(&data,&relocation_table,&records,&other_records,&table_labels)?;
-        Ok(Self{
+    pub fn new(
+        data: Vec<u8>,
+        relocation_table: Vec<u32>,
+        records: Vec<TableRecord>,
+        other_records: Vec<TableRecord>,
+        table_labels: Vec<u8>,
+    ) -> Result<Self> {
+        let header = Header::from_data(
+            &data,
+            &relocation_table,
+            &records,
+            &other_records,
+            &table_labels,
+        )?;
+        Ok(Self {
             header,
             data,
             relocation_table,

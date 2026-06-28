@@ -1,6 +1,6 @@
+use crate::rlb_file::LabelId;
 use slotmap::SlotMap;
 use std::collections::HashMap;
-use crate::rlb_file::LabelId;
 
 #[derive(Clone, Debug)]
 pub struct LabelPool {

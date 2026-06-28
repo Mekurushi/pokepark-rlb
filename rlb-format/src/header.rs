@@ -1,7 +1,7 @@
-use rlb_error::{Result};
-use binrw::{BinRead, BinWrite};
 use crate::TableRecord;
 use crate::util::checked_u32;
+use binrw::{BinRead, BinWrite};
+use rlb_error::Result;
 
 pub const HEADER_SIZE: u32 = 0x20;
 
@@ -35,7 +35,13 @@ impl Header {
     pub fn table_labels_offset(&self) -> u32 {
         self.entries_offset() + (self.num_entries + self.num_other_entries) * ENTRY_SLOT_SIZE
     }
-    pub fn from_data(data: &[u8], relocation_table: &[u32], records: &[TableRecord], other_records: &[TableRecord], table_labels: &[u8])  -> Result<Self> {
+    pub fn from_data(
+        data: &[u8],
+        relocation_table: &[u32],
+        records: &[TableRecord],
+        other_records: &[TableRecord],
+        table_labels: &[u8],
+    ) -> Result<Self> {
         let data_size = checked_u32(data.len(), "data size")?;
         let num_relocs = checked_u32(relocation_table.len(), "relocation count")?;
         let num_entries = checked_u32(records.len(), "record count")?;

@@ -9,7 +9,10 @@ pub struct RelocationTable {
 impl RelocationTable {
     pub fn from_raw(sites: &[u32]) -> Self {
         let lookup = sites.iter().copied().collect();
-        Self { sites: Vec::from(sites), lookup }
+        Self {
+            sites: Vec::from(sites),
+            lookup,
+        }
     }
 
     pub fn len(&self) -> usize {
