@@ -5,7 +5,6 @@ mod rlb_file;
 mod string_pool;
 mod table;
 mod table_collection;
-pub mod table_view;
 mod util;
 mod value;
 

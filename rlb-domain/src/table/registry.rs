@@ -1,6 +1,6 @@
 use crate::macros::declare_tables;
 use crate::rlb_file::StringId;
-use crate::table_view::TableView;
+use crate::table::table_view::TableView;
 use rlb_error::Result;
 
 declare_tables! {
@@ -22,7 +22,7 @@ declare_tables! {
 
 
     SinglePointer {
-        entry: crate::entry_schemas::single_pointer::SinglePointerEntry,
+        entry: crate::entry_schemas::fsb_file_list::FsbFileListData,
 
         tables: [
             "FsbFileListData",

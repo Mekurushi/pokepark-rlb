@@ -24,7 +24,7 @@ pub enum TableKind {
         ),
     )*
 
-    Unknown,
+    Unknown, // TODO: Unknown should hold/display raw bytes
 }
 
 

@@ -1,4 +1,6 @@
 pub mod registry;
+pub mod table_view;
+
 use crate::rlb_file::StringId;
 use crate::string_pool::SerializedStringPoolContext;
 use crate::table::registry::TableKind;

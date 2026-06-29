@@ -6,11 +6,11 @@ use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
 
 #[derive(Clone, Copy, Debug)]
-pub struct SinglePointerEntry {
+pub struct FsbFileListData {
     pub script_name: Value,
 }
 
-impl TableEntry for SinglePointerEntry {
+impl TableEntry for FsbFileListData {
     const SIZE: usize = 0x4;
     fn fields(&self) -> &[FieldDescriptor] {
         FSB_FILE_LIST_FIELDS

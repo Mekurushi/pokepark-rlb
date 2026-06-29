@@ -1,6 +1,5 @@
+pub mod fsb_file_list;
 pub mod script_list;
-pub mod single_pointer;
-
 use crate::rlb_file::StringId;
 use crate::string_pool::SerializedStringPoolContext;
 use crate::Value;
