@@ -28,5 +28,12 @@ declare_tables! {
             "FsbFileListData",
         ]
     }
+    WanderingData {
+        entry: crate::entry_schemas::wandering_data::WanderingDataTable,
+
+        tables: [
+            "WanderingDataTable",
+        ]
+    }
 
 }

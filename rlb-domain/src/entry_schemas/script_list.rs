@@ -1,6 +1,6 @@
 use crate::rlb_file::StringId;
 use crate::string_pool::SerializedStringPoolContext;
-use crate::util::{read_bytes, read_u32, read_u8, value_at, write_value};
+use crate::util::{read_bytes, read_u32, read_u8, require_int, value_at, write_value};
 use crate::TableEntry;
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
@@ -64,15 +64,6 @@ impl TableEntry for ScriptListEntry {
         }
     }
     fn set(&mut self, field: &str, value: Value) -> rlb_error::Result<()> {
-        fn require_int(field: &str, value: Value) -> rlb_error::Result<u32> {
-            match value {
-                Value::Integer(v) => Ok(v),
-                Value::Pointer(_) => Err(Error::Validation(format!(
-                    "field '{field}' expects an integer value, not a pointer"
-                ))),
-            }
-        }
-
         match field {
             "name" => self.name = value,
             "object_id" => self.object_id = require_int(field, value)?,

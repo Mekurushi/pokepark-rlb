@@ -106,3 +106,12 @@ pub(crate) fn read_bytes<const N: usize>(data: &[u8], offset: usize) -> Result<[
             length: data.len(),
         })
 }
+
+pub fn require_int(field: &str, value: Value) -> rlb_error::Result<u32> {
+    match value {
+        Value::Integer(v) => Ok(v),
+        Value::Pointer(_) => Err(Error::Validation(format!(
+            "field '{field}' expects an integer value, not a pointer"
+        ))),
+    }
+}
