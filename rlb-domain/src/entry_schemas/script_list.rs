@@ -34,7 +34,7 @@ impl TableEntry for ScriptListEntry {
     }
 
     fn is_terminator(&self) -> bool {
-        self.name == Value::Integer(0)
+        self.name == Value::String(None)
             && self.object_id == 0
             && self.minimum_chapter == 0
             && self.medium_chapter == 0

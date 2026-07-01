@@ -43,9 +43,9 @@ where
     let raw = read_u32(data, field_offset)?;
     let abs_offset = checked_u32(base_offset + field_offset, "calculating field offset")?;
     if is_relocated(abs_offset) {
-        Ok(Value::Pointer(resolve_string(raw)?))
+        Ok(Value::String(Option::from(resolve_string(raw)?)))
     } else {
-        Ok(Value::Integer(raw))
+        Ok(Value::String(None)) // TODO: differentiate between None string and Integer based on field
     }
 }
 pub(crate) fn write_value(
@@ -58,22 +58,27 @@ pub(crate) fn write_value(
 ) -> Result<()> {
     match value {
         Value::Integer(v) => {
-            out.extend_from_slice(&v.to_le_bytes());
+            out.extend_from_slice(&v.to_be_bytes());
         }
-        Value::Pointer(string_id) => {
-            let string_offset = strings.offset_of(string_id).ok_or_else(|| {
-                Error::Validation(format!(
-                    "string ID {string_id:?} not found in serialized string pool"
-                ))
-            })?;
-            out.extend_from_slice(
-                &(checked_u32(string_offset, "converting string offset to u32")?).to_be_bytes(),
-            );
-            relocations.push(checked_u32(
-                base_offset + field_offset,
-                "calculating field offset for relocation table",
-            )?);
-        }
+        Value::String(string_id) => match string_id {
+            None => {
+                out.extend_from_slice(&0u32.to_be_bytes());
+            }
+            Some(id) => {
+                let string_offset = strings.offset_of(id).ok_or_else(|| {
+                    Error::Validation(format!(
+                        "string ID {string_id:?} not found in serialized string pool"
+                    ))
+                })?;
+                out.extend_from_slice(
+                    &(checked_u32(string_offset, "converting string offset to u32")?).to_be_bytes(),
+                );
+                relocations.push(checked_u32(
+                    base_offset + field_offset,
+                    "calculating field offset for relocation table",
+                )?);
+            }
+        },
     }
     Ok(())
 }
@@ -110,7 +115,7 @@ pub(crate) fn read_bytes<const N: usize>(data: &[u8], offset: usize) -> Result<[
 pub fn require_int(field: &str, value: Value) -> rlb_error::Result<u32> {
     match value {
         Value::Integer(v) => Ok(v),
-        Value::Pointer(_) => Err(Error::Validation(format!(
+        Value::String(_) => Err(Error::Validation(format!(
             "field '{field}' expects an integer value, not a pointer"
         ))),
     }

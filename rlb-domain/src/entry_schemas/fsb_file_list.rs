@@ -16,7 +16,7 @@ impl TableEntry for FsbFileListData {
         FSB_FILE_LIST_FIELDS
     }
     fn is_terminator(&self) -> bool {
-        self.script_name == Value::Integer(0)
+        self.script_name == Value::String(None)
     }
     fn get(&self, field: &str) -> Option<Value> {
         match field {
