@@ -61,16 +61,24 @@ impl TableEntry for WanderingDataTable {
     }
     fn write(
         &self,
-        out: &mut Vec<u8>,
         _base_offset: usize,
         _strings: &SerializedStringPoolContext<StringId>,
         _relocations: &mut Vec<u32>,
-    ) -> Result<()> {
-        out.extend_from_slice(&self.pokemon_unlock_id.to_be_bytes());
-        out.extend_from_slice(&self.pokemon_friendship_id.to_be_bytes());
-        out.extend_from_slice(&self.enabled.to_be_bytes());
-        out.extend_from_slice(&self._pad);
-        Ok(())
+    ) -> Result<Vec<u8>> {
+        let mut entry: Vec<u8> = Vec::with_capacity(Self::SIZE);
+
+        entry.extend_from_slice(&self.pokemon_unlock_id.to_be_bytes());
+        entry.extend_from_slice(&self.pokemon_friendship_id.to_be_bytes());
+        entry.extend_from_slice(&self.enabled.to_be_bytes());
+        entry.extend_from_slice(&self._pad);
+
+        if entry.len() != Self::SIZE {
+            return Err(Error::SerializationMismatch {
+                expected: Self::SIZE as u32,
+                actual: entry.len(),
+            });
+        }
+        Ok(entry)
     }
 }
 

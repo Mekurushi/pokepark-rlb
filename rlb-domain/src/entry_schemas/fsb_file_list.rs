@@ -51,21 +51,27 @@ impl TableEntry for FsbFileListData {
     }
     fn write(
         &self,
-        out: &mut Vec<u8>,
         base_offset: usize,
         strings: &SerializedStringPoolContext<StringId>,
         relocations: &mut Vec<u32>,
-    ) -> Result<()> {
+    ) -> Result<Vec<u8>> {
+        let mut entry: Vec<u8> = Vec::with_capacity(Self::SIZE);
+
         write_value(
             self.script_name,
             0x00,
             base_offset,
-            out,
+            &mut entry,
             strings,
             relocations,
         )?;
-
-        Ok(())
+        if entry.len() != Self::SIZE {
+            return Err(Error::SerializationMismatch {
+                expected: Self::SIZE as u32,
+                actual: entry.len(),
+            });
+        }
+        Ok(entry)
     }
 }
 

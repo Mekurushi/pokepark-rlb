@@ -34,9 +34,8 @@ pub trait TableEntry: Sized + std::fmt::Debug {
 
     fn write(
         &self,
-        out: &mut Vec<u8>,
         base_offset: usize,
         strings: &SerializedStringPoolContext<StringId>,
         relocations: &mut Vec<u32>,
-    ) -> Result<()>;
+    ) -> Result<Vec<u8>>;
 }

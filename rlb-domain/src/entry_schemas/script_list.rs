@@ -127,45 +127,79 @@ impl TableEntry for ScriptListEntry {
     }
     fn write(
         &self,
-        out: &mut Vec<u8>,
         base_offset: usize,
         strings: &SerializedStringPoolContext<StringId>,
         relocations: &mut Vec<u32>,
-    ) -> Result<()> {
-        write_value(self.name, 0x00, base_offset, out, strings, relocations)?;
-        out.extend_from_slice(&self.object_id.to_be_bytes());
-        out.extend_from_slice(&self.minimum_chapter.to_be_bytes());
-        out.extend_from_slice(&self.medium_chapter.to_be_bytes());
-        out.extend_from_slice(&self.maximum_chapter.to_be_bytes());
-        write_value(self.flagname, 0x14, base_offset, out, strings, relocations)?;
-        out.extend_from_slice(&self.flag_value_condition.to_be_bytes());
-        out.push(self.target_script);
-        out.extend_from_slice(&self.pad_0x1d);
-        out.extend_from_slice(&self.unknown.to_be_bytes());
+    ) -> Result<Vec<u8>> {
+        let mut entry: Vec<u8> = Vec::with_capacity(Self::SIZE);
+
+        write_value(
+            self.name,
+            0x00,
+            base_offset,
+            &mut entry,
+            strings,
+            relocations,
+        )?;
+        entry.extend_from_slice(&self.object_id.to_be_bytes());
+        entry.extend_from_slice(&self.minimum_chapter.to_be_bytes());
+        entry.extend_from_slice(&self.medium_chapter.to_be_bytes());
+        entry.extend_from_slice(&self.maximum_chapter.to_be_bytes());
+        write_value(
+            self.flagname,
+            0x14,
+            base_offset,
+            &mut entry,
+            strings,
+            relocations,
+        )?;
+        entry.extend_from_slice(&self.flag_value_condition.to_be_bytes());
+        entry.push(self.target_script);
+        entry.extend_from_slice(&self.pad_0x1d);
+        entry.extend_from_slice(&self.unknown.to_be_bytes());
         write_value(
             self.entrypoint,
             0x24,
             base_offset,
-            out,
+            &mut entry,
             strings,
             relocations,
-        )?; // 0x24
-        out.extend_from_slice(&self.zone_id.to_be_bytes());
-        out.extend_from_slice(&self.area_id.to_be_bytes());
-        out.extend_from_slice(&self.position_id.to_be_bytes());
-        out.extend_from_slice(&self.pad_0x34.to_be_bytes());
+        )?;
+        entry.extend_from_slice(&self.zone_id.to_be_bytes());
+        entry.extend_from_slice(&self.area_id.to_be_bytes());
+        entry.extend_from_slice(&self.position_id.to_be_bytes());
+        entry.extend_from_slice(&self.pad_0x34.to_be_bytes());
         write_value(
             self.after_script_entrypoint,
             0x38,
             base_offset,
-            out,
+            &mut entry,
             strings,
             relocations,
         )?;
-        write_value(self.animation, 0x3C, base_offset, out, strings, relocations)?;
-        write_value(self.flagname2, 0x40, base_offset, out, strings, relocations)?;
-
-        Ok(())
+        write_value(
+            self.animation,
+            0x3C,
+            base_offset,
+            &mut entry,
+            strings,
+            relocations,
+        )?;
+        write_value(
+            self.flagname2,
+            0x40,
+            base_offset,
+            &mut entry,
+            strings,
+            relocations,
+        )?;
+        if entry.len() != Self::SIZE {
+            return Err(Error::SerializationMismatch {
+                expected: Self::SIZE as u32,
+                actual: entry.len(),
+            });
+        }
+        Ok(entry)
     }
 }
 pub const SCRIPT_LIST_FIELDS: &[FieldDescriptor] = &[

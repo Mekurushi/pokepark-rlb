@@ -51,12 +51,15 @@ impl<T: TableEntry> TableView<T> {
     ) -> Result<()> {
         for (i, entry) in self.entries.iter().enumerate() {
             let entry_offset = base_offset + i * T::SIZE;
-            entry.write(out, entry_offset, strings, relocations)?;
+            out.extend_from_slice(&entry.write(entry_offset, strings, relocations)?);
         }
 
         let terminator_offset = base_offset + self.entries.len() * T::SIZE;
-        self.terminator
-            .write(out, terminator_offset, strings, relocations)?;
+        out.extend_from_slice(
+            &self
+                .terminator
+                .write(terminator_offset, strings, relocations)?,
+        );
 
         Ok(())
     }
