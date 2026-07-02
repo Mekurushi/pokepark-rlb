@@ -1,6 +1,6 @@
+use crate::entry_schemas::codec::{EntryDeserializer, EntrySerializer};
 use crate::rlb_file::StringId;
-use crate::string_pool::SerializedStringPoolContext;
-use crate::util::{read_bytes, read_u32, read_u8, require_int};
+use crate::util::require_int;
 use crate::TableEntry;
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
@@ -10,7 +10,7 @@ pub struct WanderingDataTable {
     pokemon_unlock_id: u32,
     pokemon_friendship_id: u32,
     enabled: u8,
-    _pad: [u8; 3],
+    pad: [u8; 3],
 }
 
 impl TableEntry for WanderingDataTable {
@@ -42,43 +42,24 @@ impl TableEntry for WanderingDataTable {
         Ok(())
     }
 
-    fn read<R, E>(
-        data: &[u8],
-        _base_offset: usize,
-        _resolve_string: &mut R,
-        _is_relocated: &mut E,
-    ) -> Result<Self>
+    fn read<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Self>
     where
         R: FnMut(u32) -> Result<StringId>,
         E: FnMut(u32) -> bool,
     {
         Ok(Self {
-            pokemon_unlock_id: read_u32(data, 0x00)?,
-            pokemon_friendship_id: read_u32(data, 0x04)?,
-            enabled: read_u8(data, 0x08)?,
-            _pad: read_bytes(data, 0x9)?,
+            pokemon_unlock_id: de.read_u32()?,
+            pokemon_friendship_id: de.read_u32()?,
+            enabled: de.read_u8()?,
+            pad: de.read_pad()?,
         })
     }
-    fn write(
-        &self,
-        _base_offset: usize,
-        _strings: &SerializedStringPoolContext<StringId>,
-        _relocations: &mut Vec<u32>,
-    ) -> Result<Vec<u8>> {
-        let mut entry: Vec<u8> = Vec::with_capacity(Self::SIZE);
-
-        entry.extend_from_slice(&self.pokemon_unlock_id.to_be_bytes());
-        entry.extend_from_slice(&self.pokemon_friendship_id.to_be_bytes());
-        entry.extend_from_slice(&self.enabled.to_be_bytes());
-        entry.extend_from_slice(&self._pad);
-
-        if entry.len() != Self::SIZE {
-            return Err(Error::SerializationMismatch {
-                expected: Self::SIZE as u32,
-                actual: entry.len(),
-            });
-        }
-        Ok(entry)
+    fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()> {
+        ser.write_u32(self.pokemon_unlock_id);
+        ser.write_u32(self.pokemon_friendship_id);
+        ser.write_u8(self.enabled);
+        ser.write_pad(&self.pad);
+        Ok(())
     }
 }
 

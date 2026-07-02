@@ -1,6 +1,6 @@
+use crate::entry_schemas::codec::{EntryDeserializer, EntrySerializer};
 use crate::rlb_file::StringId;
-use crate::string_pool::SerializedStringPoolContext;
-use crate::util::{read_bytes, read_u32, read_u8, require_int, value_at, write_value};
+use crate::util::require_int;
 use crate::TableEntry;
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
@@ -88,118 +88,53 @@ impl TableEntry for ScriptListEntry {
         Ok(())
     }
 
-    fn read<R, E>(
-        data: &[u8],
-        base_offset: usize,
-        resolve_string: &mut R,
-        is_relocated: &mut E,
-    ) -> rlb_error::Result<Self>
+    fn read<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Self>
     where
         R: FnMut(u32) -> Result<StringId>,
         E: FnMut(u32) -> bool,
     {
         Ok(Self {
-            name: value_at(data, 0x00, base_offset, resolve_string, is_relocated)?,
-            object_id: read_u32(data, 0x04)?,
-            minimum_chapter: read_u32(data, 0x08)?,
-            medium_chapter: read_u32(data, 0x0C)?,
-            maximum_chapter: read_u32(data, 0x10)?,
-            flagname: value_at(data, 0x14, base_offset, resolve_string, is_relocated)?,
-            flag_value_condition: read_u32(data, 0x18)?,
-            target_script: read_u8(data, 0x1C)?,
-            pad_0x1d: read_bytes(data, 0x1D)?,
-            unknown: read_u32(data, 0x20)?,
-            entrypoint: value_at(data, 0x24, base_offset, resolve_string, is_relocated)?,
-            zone_id: read_u32(data, 0x28)?,
-            area_id: read_u32(data, 0x2C)?,
-            position_id: read_u32(data, 0x30)?,
-            pad_0x34: read_u32(data, 0x34)?,
-            after_script_entrypoint: value_at(
-                data,
-                0x38,
-                base_offset,
-                resolve_string,
-                is_relocated,
-            )?,
-            animation: value_at(data, 0x3C, base_offset, resolve_string, is_relocated)?,
-            flagname2: value_at(data, 0x40, base_offset, resolve_string, is_relocated)?,
+            name: de.read_string_pointer()?,
+            object_id: de.read_u32()?,
+            minimum_chapter: de.read_u32()?,
+            medium_chapter: de.read_u32()?,
+            maximum_chapter: de.read_u32()?,
+            flagname: de.read_string_pointer()?,
+            flag_value_condition: de.read_u32()?,
+            target_script: de.read_u8()?,
+            pad_0x1d: de.read_pad()?,
+            unknown: de.read_u32()?,
+            entrypoint: de.read_string_pointer()?,
+            zone_id: de.read_u32()?,
+            area_id: de.read_u32()?,
+            position_id: de.read_u32()?,
+            pad_0x34: de.read_u32()?,
+            after_script_entrypoint: de.read_string_pointer()?,
+            animation: de.read_string_pointer()?,
+            flagname2: de.read_string_pointer()?,
         })
     }
-    fn write(
-        &self,
-        base_offset: usize,
-        strings: &SerializedStringPoolContext<StringId>,
-        relocations: &mut Vec<u32>,
-    ) -> Result<Vec<u8>> {
-        let mut entry: Vec<u8> = Vec::with_capacity(Self::SIZE);
+    fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()> {
+        ser.write_string_pointer(self.name)?;
+        ser.write_u32(self.object_id);
+        ser.write_u32(self.minimum_chapter);
+        ser.write_u32(self.medium_chapter);
+        ser.write_u32(self.maximum_chapter);
+        ser.write_string_pointer(self.flagname)?;
+        ser.write_u32(self.flag_value_condition);
+        ser.write_u8(self.target_script);
+        ser.write_pad(&self.pad_0x1d);
+        ser.write_u32(self.unknown);
+        ser.write_string_pointer(self.entrypoint)?;
+        ser.write_u32(self.zone_id);
+        ser.write_u32(self.area_id);
+        ser.write_u32(self.position_id);
+        ser.write_u32(self.pad_0x34);
+        ser.write_string_pointer(self.after_script_entrypoint)?;
+        ser.write_string_pointer(self.animation)?;
+        ser.write_string_pointer(self.flagname2)?;
 
-        write_value(
-            self.name,
-            0x00,
-            base_offset,
-            &mut entry,
-            strings,
-            relocations,
-        )?;
-        entry.extend_from_slice(&self.object_id.to_be_bytes());
-        entry.extend_from_slice(&self.minimum_chapter.to_be_bytes());
-        entry.extend_from_slice(&self.medium_chapter.to_be_bytes());
-        entry.extend_from_slice(&self.maximum_chapter.to_be_bytes());
-        write_value(
-            self.flagname,
-            0x14,
-            base_offset,
-            &mut entry,
-            strings,
-            relocations,
-        )?;
-        entry.extend_from_slice(&self.flag_value_condition.to_be_bytes());
-        entry.push(self.target_script);
-        entry.extend_from_slice(&self.pad_0x1d);
-        entry.extend_from_slice(&self.unknown.to_be_bytes());
-        write_value(
-            self.entrypoint,
-            0x24,
-            base_offset,
-            &mut entry,
-            strings,
-            relocations,
-        )?;
-        entry.extend_from_slice(&self.zone_id.to_be_bytes());
-        entry.extend_from_slice(&self.area_id.to_be_bytes());
-        entry.extend_from_slice(&self.position_id.to_be_bytes());
-        entry.extend_from_slice(&self.pad_0x34.to_be_bytes());
-        write_value(
-            self.after_script_entrypoint,
-            0x38,
-            base_offset,
-            &mut entry,
-            strings,
-            relocations,
-        )?;
-        write_value(
-            self.animation,
-            0x3C,
-            base_offset,
-            &mut entry,
-            strings,
-            relocations,
-        )?;
-        write_value(
-            self.flagname2,
-            0x40,
-            base_offset,
-            &mut entry,
-            strings,
-            relocations,
-        )?;
-        if entry.len() != Self::SIZE {
-            return Err(Error::SerializationMismatch {
-                expected: Self::SIZE as u32,
-                actual: entry.len(),
-            });
-        }
-        Ok(entry)
+        Ok(())
     }
 }
 pub const SCRIPT_LIST_FIELDS: &[FieldDescriptor] = &[

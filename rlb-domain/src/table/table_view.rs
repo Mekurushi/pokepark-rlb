@@ -1,3 +1,4 @@
+use crate::entry_schemas::{EntryDeserializer, EntrySerializer};
 use crate::rlb_file::StringId;
 use crate::string_pool::SerializedStringPoolContext;
 use crate::TableEntry;
@@ -28,8 +29,8 @@ impl<T: TableEntry> TableView<T> {
                 .ok_or(Error::UnexpectedEof {
                     context: "parsing table record",
                 })?;
-
-            let record = T::read(record_bytes, offset, resolve_string, is_relocated)?;
+            let mut de = EntryDeserializer::new(record_bytes, offset, resolve_string, is_relocated);
+            let record = T::read(&mut de)?;
             if record.is_terminator() {
                 return Ok(TableView {
                     entries,
@@ -51,15 +52,15 @@ impl<T: TableEntry> TableView<T> {
     ) -> Result<()> {
         for (i, entry) in self.entries.iter().enumerate() {
             let entry_offset = base_offset + i * T::SIZE;
-            out.extend_from_slice(&entry.write(entry_offset, strings, relocations)?);
+            let mut ser = EntrySerializer::new(entry_offset, strings, relocations);
+            entry.write(&mut ser)?;
+            ser.finish(out, T::SIZE)?;
         }
 
         let terminator_offset = base_offset + self.entries.len() * T::SIZE;
-        out.extend_from_slice(
-            &self
-                .terminator
-                .write(terminator_offset, strings, relocations)?,
-        );
+        let mut ser = EntrySerializer::new(terminator_offset, strings, relocations);
+        self.terminator.write(&mut ser)?;
+        ser.finish(out, T::SIZE)?;
 
         Ok(())
     }

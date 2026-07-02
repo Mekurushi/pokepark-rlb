@@ -1,9 +1,10 @@
+mod codec;
 pub mod fsb_file_list;
 pub mod script_list;
 pub mod wandering_data;
 
+pub(crate) use crate::entry_schemas::codec::{EntryDeserializer, EntrySerializer};
 use crate::rlb_file::StringId;
-use crate::string_pool::SerializedStringPoolContext;
 use crate::Value;
 use rlb_error::Result;
 
@@ -22,20 +23,10 @@ pub trait TableEntry: Sized + std::fmt::Debug {
 
     fn set(&mut self, field: &str, value: Value) -> Result<()>;
 
-    fn read<R, E>(
-        data: &[u8],
-        base_offset: usize,
-        resolve_string: &mut R,
-        is_relocated: &mut E,
-    ) -> Result<Self>
+    fn read<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Self>
     where
         R: FnMut(u32) -> Result<StringId>,
         E: FnMut(u32) -> bool;
 
-    fn write(
-        &self,
-        base_offset: usize,
-        strings: &SerializedStringPoolContext<StringId>,
-        relocations: &mut Vec<u32>,
-    ) -> Result<Vec<u8>>;
+    fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()>;
 }

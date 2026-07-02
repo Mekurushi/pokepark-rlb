@@ -1,6 +1,5 @@
+use crate::entry_schemas::codec::{EntryDeserializer, EntrySerializer};
 use crate::rlb_file::StringId;
-use crate::string_pool::SerializedStringPoolContext;
-use crate::util::{value_at, write_value};
 use crate::TableEntry;
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
@@ -35,43 +34,20 @@ impl TableEntry for FsbFileListData {
         Ok(())
     }
 
-    fn read<R, E>(
-        data: &[u8],
-        base_offset: usize,
-        resolve_string: &mut R,
-        is_relocated: &mut E,
-    ) -> Result<Self>
+    fn read<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Self>
     where
         R: FnMut(u32) -> Result<StringId>,
         E: FnMut(u32) -> bool,
     {
+        let script = de.read_string_pointer()?;
+
         Ok(Self {
-            script_name: value_at(data, 0x00, base_offset, resolve_string, is_relocated)?,
+            script_name: script,
         })
     }
-    fn write(
-        &self,
-        base_offset: usize,
-        strings: &SerializedStringPoolContext<StringId>,
-        relocations: &mut Vec<u32>,
-    ) -> Result<Vec<u8>> {
-        let mut entry: Vec<u8> = Vec::with_capacity(Self::SIZE);
-
-        write_value(
-            self.script_name,
-            0x00,
-            base_offset,
-            &mut entry,
-            strings,
-            relocations,
-        )?;
-        if entry.len() != Self::SIZE {
-            return Err(Error::SerializationMismatch {
-                expected: Self::SIZE as u32,
-                actual: entry.len(),
-            });
-        }
-        Ok(entry)
+    fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()> {
+        ser.write_string_pointer(self.script_name)?;
+        Ok(())
     }
 }
 
