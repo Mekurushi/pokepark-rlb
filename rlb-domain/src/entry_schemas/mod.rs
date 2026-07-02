@@ -16,7 +16,7 @@ pub struct FieldDescriptor {
 pub trait TableEntry: Sized + std::fmt::Debug {
     const SIZE: usize;
 
-    fn fields(&self) -> &[FieldDescriptor];
+    const FIELDS: &'static [FieldDescriptor];
     fn is_terminator(&self) -> bool;
 
     fn get(&self, field: &str) -> Option<Value>;

@@ -15,9 +15,8 @@ pub struct WanderingDataTable {
 
 impl TableEntry for WanderingDataTable {
     const SIZE: usize = 0xC;
-    fn fields(&self) -> &[FieldDescriptor] {
-        WANDERING_DATA_FIELDS
-    }
+    const FIELDS: &'static [FieldDescriptor] = &WANDERING_DATA_FIELDS;
+
     fn is_terminator(&self) -> bool {
         self.pokemon_unlock_id == 0xFFFFFFFF
             && self.pokemon_friendship_id == 0xFFFFFFFF

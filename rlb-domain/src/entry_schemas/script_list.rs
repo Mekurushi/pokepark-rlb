@@ -29,9 +29,7 @@ pub struct ScriptListEntry {
 
 impl TableEntry for ScriptListEntry {
     const SIZE: usize = 0x44;
-    fn fields(&self) -> &[FieldDescriptor] {
-        SCRIPT_LIST_FIELDS
-    }
+    const FIELDS: &'static [FieldDescriptor] = &SCRIPT_LIST_FIELDS;
 
     fn is_terminator(&self) -> bool {
         self.name == Value::String(None)

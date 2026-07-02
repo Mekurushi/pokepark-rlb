@@ -11,9 +11,7 @@ pub struct FsbFileListData {
 
 impl TableEntry for FsbFileListData {
     const SIZE: usize = 0x4;
-    fn fields(&self) -> &[FieldDescriptor] {
-        FSB_FILE_LIST_FIELDS
-    }
+    const FIELDS: &'static [FieldDescriptor] = &FSB_FILE_LIST_FIELDS;
     fn is_terminator(&self) -> bool {
         self.script_name == Value::String(None)
     }
