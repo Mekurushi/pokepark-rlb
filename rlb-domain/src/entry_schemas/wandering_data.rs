@@ -1,4 +1,5 @@
 use crate::entry_schemas::codec::{EntryDeserializer, EntrySerializer};
+use crate::entry_schemas::{FieldConstraint, FieldKind};
 use crate::rlb_file::StringId;
 use crate::util::checked_bool;
 use crate::TableEntry;
@@ -65,9 +66,20 @@ impl TableEntry for WanderingDataTable {
 pub const WANDERING_DATA_FIELDS: &[FieldDescriptor] = &[
     FieldDescriptor {
         name: "pokemon_unlock_id",
+        description: "",
+        kind: FieldKind::Integer,
+        constraint: FieldConstraint::None,
     },
     FieldDescriptor {
         name: "pokemon_friendship_id",
+        description: "",
+        kind: FieldKind::Integer,
+        constraint: FieldConstraint::None,
     },
-    FieldDescriptor { name: "enabled" },
+    FieldDescriptor {
+        name: "enabled",
+        description: "",
+        kind: FieldKind::Boolean,
+        constraint: FieldConstraint::None,
+    },
 ];

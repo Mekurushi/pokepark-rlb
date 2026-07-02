@@ -1,4 +1,5 @@
 use crate::entry_schemas::codec::{EntryDeserializer, EntrySerializer};
+use crate::entry_schemas::{FieldConstraint, FieldKind};
 use crate::rlb_file::StringId;
 use crate::TableEntry;
 use crate::{FieldDescriptor, Value};
@@ -135,35 +136,108 @@ impl TableEntry for ScriptListEntry {
     }
 }
 pub const SCRIPT_LIST_FIELDS: &[FieldDescriptor] = &[
-    FieldDescriptor { name: "name" },
-    FieldDescriptor { name: "object_id" },
+    FieldDescriptor {
+        name: "name",
+        description: "",
+        kind: FieldKind::String,
+        constraint: FieldConstraint::None,
+    },
+    FieldDescriptor {
+        name: "object_id",
+        description: "",
+        kind: FieldKind::Integer,
+        constraint: FieldConstraint::None,
+    },
     FieldDescriptor {
         name: "minimum_chapter",
+        description: "",
+        kind: FieldKind::Integer,
+        constraint: FieldConstraint::None,
     },
     FieldDescriptor {
         name: "medium_chapter",
+        description: "",
+        kind: FieldKind::Integer,
+        constraint: FieldConstraint::None,
     },
     FieldDescriptor {
         name: "maximum_chapter",
+        description: "",
+        kind: FieldKind::Integer,
+        constraint: FieldConstraint::None,
     },
-    FieldDescriptor { name: "flagname" },
+    FieldDescriptor {
+        name: "flagname",
+        description: "",
+        kind: FieldKind::String,
+        constraint: FieldConstraint::None,
+    },
     FieldDescriptor {
         name: "flag_value_condition",
+        description: "",
+        kind: FieldKind::Integer,
+        constraint: FieldConstraint::None,
     },
     FieldDescriptor {
         name: "target_script",
+        description: "",
+        kind: FieldKind::Integer,
+        constraint: FieldConstraint::TableIndex {
+            table: "FsbFileListData",
+        },
     },
-    FieldDescriptor { name: "unknown" },
-    FieldDescriptor { name: "entrypoint" },
-    FieldDescriptor { name: "zone_id" },
-    FieldDescriptor { name: "area_id" },
+    FieldDescriptor {
+        name: "unknown",
+        description: "",
+        kind: FieldKind::Integer,
+        constraint: FieldConstraint::None,
+    },
+    FieldDescriptor {
+        name: "entrypoint",
+        description: "",
+        kind: FieldKind::String,
+        constraint: FieldConstraint::None,
+    },
+    FieldDescriptor {
+        name: "zone_id",
+        description: "",
+        kind: FieldKind::Integer,
+        constraint: FieldConstraint::None,
+    },
+    FieldDescriptor {
+        name: "area_id",
+        description: "",
+        kind: FieldKind::Integer,
+        constraint: FieldConstraint::None,
+    },
     FieldDescriptor {
         name: "position_id",
+        description: "",
+        kind: FieldKind::Integer,
+        constraint: FieldConstraint::None,
     },
-    FieldDescriptor { name: "pad_0x34" },
+    FieldDescriptor {
+        name: "pad_0x34",
+        description: "",
+        kind: FieldKind::Integer,
+        constraint: FieldConstraint::None,
+    },
     FieldDescriptor {
         name: "after_script_entrypoint",
+        description: "",
+        kind: FieldKind::String,
+        constraint: FieldConstraint::None,
     },
-    FieldDescriptor { name: "animation" },
-    FieldDescriptor { name: "flagname2" },
+    FieldDescriptor {
+        name: "animation",
+        description: "",
+        kind: FieldKind::String,
+        constraint: FieldConstraint::None,
+    },
+    FieldDescriptor {
+        name: "flagname2",
+        description: "",
+        kind: FieldKind::String,
+        constraint: FieldConstraint::None,
+    },
 ];

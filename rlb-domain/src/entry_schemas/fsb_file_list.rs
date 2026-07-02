@@ -1,4 +1,5 @@
 use crate::entry_schemas::codec::{EntryDeserializer, EntrySerializer};
+use crate::entry_schemas::{FieldConstraint, FieldKind};
 use crate::rlb_file::StringId;
 use crate::TableEntry;
 use crate::{FieldDescriptor, Value};
@@ -51,4 +52,7 @@ impl TableEntry for FsbFileListData {
 
 pub const FSB_FILE_LIST_FIELDS: &[FieldDescriptor] = &[FieldDescriptor {
     name: "script_name",
+    description: "",
+    kind: FieldKind::String,
+    constraint: FieldConstraint::None,
 }];
