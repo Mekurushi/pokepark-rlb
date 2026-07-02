@@ -1,15 +1,15 @@
 use crate::entry_schemas::codec::{EntryDeserializer, EntrySerializer};
 use crate::rlb_file::StringId;
-use crate::util::require_int;
+use crate::util::checked_bool;
 use crate::TableEntry;
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
 
 #[derive(Clone, Copy, Debug)]
 pub struct WanderingDataTable {
-    pokemon_unlock_id: u32,
-    pokemon_friendship_id: u32,
-    enabled: u8,
+    pokemon_unlock_id: Value,
+    pokemon_friendship_id: Value,
+    enabled: Value,
     pad: [u8; 3],
 }
 
@@ -18,24 +18,24 @@ impl TableEntry for WanderingDataTable {
     const FIELDS: &'static [FieldDescriptor] = &WANDERING_DATA_FIELDS;
 
     fn is_terminator(&self) -> bool {
-        self.pokemon_unlock_id == 0xFFFFFFFF
-            && self.pokemon_friendship_id == 0xFFFFFFFF
-            && self.enabled == 0
+        self.pokemon_unlock_id == Value::Integer(0xFFFFFFFF)
+            && self.pokemon_friendship_id == Value::Integer(0xFFFFFFFF)
+            && self.enabled == Value::Boolean(false)
     }
     fn get(&self, field: &str) -> Option<Value> {
         match field {
-            "pokemon_unlock_id" => Some(Value::Integer(self.pokemon_unlock_id)),
-            "pokemon_friendship_id" => Some(Value::Integer(self.pokemon_friendship_id)),
-            "enabled" => Some(Value::Integer(self.enabled as u32)),
+            "pokemon_unlock_id" => Some(self.pokemon_unlock_id),
+            "pokemon_friendship_id" => Some(self.pokemon_friendship_id),
+            "enabled" => Some(self.enabled),
             _ => None,
         }
     }
 
     fn set(&mut self, field: &str, value: Value) -> Result<()> {
         match field {
-            "pokemon_unlock_id" => self.pokemon_unlock_id = require_int(field, value)?,
-            "pokemon_friendship_id" => self.pokemon_friendship_id = require_int(field, value)?,
-            "enabled" => self.enabled = require_int(field, value)? as u8, // TODO: bool type
+            "pokemon_unlock_id" => self.pokemon_unlock_id = value,
+            "pokemon_friendship_id" => self.pokemon_friendship_id = value,
+            "enabled" => self.enabled = value,
             _ => return Err(Error::Validation(format!("unknown field: '{field}'"))),
         }
         Ok(())
@@ -47,16 +47,16 @@ impl TableEntry for WanderingDataTable {
         E: FnMut(u32) -> bool,
     {
         Ok(Self {
-            pokemon_unlock_id: de.read_u32()?,
-            pokemon_friendship_id: de.read_u32()?,
-            enabled: de.read_u8()?,
+            pokemon_unlock_id: Value::Integer(de.read_u32()?),
+            pokemon_friendship_id: Value::Integer(de.read_u32()?),
+            enabled: Value::Boolean(checked_bool(de.read_u8()?, "enabled")?),
             pad: de.read_pad()?,
         })
     }
     fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()> {
-        ser.write_u32(self.pokemon_unlock_id);
-        ser.write_u32(self.pokemon_friendship_id);
-        ser.write_u8(self.enabled);
+        ser.write_u32(self.pokemon_unlock_id.as_integer()?);
+        ser.write_u32(self.pokemon_friendship_id.as_integer()?);
+        ser.write_u8(u8::from(self.enabled.as_bool()?));
         ser.write_pad(&self.pad);
         Ok(())
     }

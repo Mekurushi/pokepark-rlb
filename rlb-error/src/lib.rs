@@ -33,4 +33,7 @@ pub enum Error {
 
     #[error("validation failed: {0}")]
     Validation(String),
+
+    #[error("{context}: expected boolean encoded as 0 or 1, found {value}")]
+    InvalidBoolean { context: &'static str, value: u8 },
 }

@@ -70,6 +70,9 @@ impl<'a> EntrySerializer<'a> {
             Value::Integer(_) => Err(Error::Validation(
                 "string_pointer field received an Integer value".into(),
             )),
+            Value::Boolean(_) => Err(Error::Validation(
+                "string_pointer field received an Boolean value".into(),
+            )),
         }
     }
 
