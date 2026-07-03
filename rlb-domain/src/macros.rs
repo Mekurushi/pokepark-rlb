@@ -20,7 +20,7 @@ pub enum TableKind {
 
     $(
         $schema(
-            TableView<$entry>
+            EntryList<$entry>
         ),
     )*
 
@@ -55,7 +55,7 @@ $(
 
             return Ok(
                 Self::$schema(
-                    TableView::discover(
+                    EntryList::discover(
                         data,
                         offset,
                         resolve_string,
@@ -89,6 +89,26 @@ _ => Ok(Self::Unknown)
         Self::Unknown => Ok(()),
     }
 }
+
+    pub(crate) fn entry_count(&self) -> usize {
+        match self {
+            $(Self::$schema(view) => view.entries.len(),)*
+            Self::Unknown => 0,
+        }
+    }
+    pub(crate) fn field_descriptors(&self) -> &'static [FieldDescriptor] {
+        match self {
+            $(Self::$schema(view) => view.fields(),)*
+            Self::Unknown => &[],
+        }
+    }
+
+    pub(crate) fn get_field(&self, index: usize, field: &str) -> Option<Value> {
+        match self {
+            $(Self::$schema(view) => view.entries.get(index)?.get(field),)*
+            Self::Unknown => None,
+        }
+    }
 
 
 

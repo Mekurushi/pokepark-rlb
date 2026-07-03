@@ -78,4 +78,60 @@ mod tests {
             println!("success: {}", path.display());
         }
     }
+    #[test]
+    fn tables_round_trip() {
+        for path in example_files("../examples/wandering")
+            .iter()
+            .chain(&example_files("../examples/script_lists"))
+        {
+            let original = std::fs::read(&path).unwrap();
+
+            let parsed =
+                RLBFile::parse(&original).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+
+            let written = parsed
+                .clone()
+                .write()
+                .unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+
+            let reparsed =
+                RLBFile::parse(&written).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+
+            let original_tables: Vec<_> = parsed.tables().collect();
+            let reparsed_tables: Vec<_> = reparsed.tables().collect();
+
+            assert_eq!(
+                original_tables.len(),
+                reparsed_tables.len(),
+                "{}",
+                path.display()
+            );
+
+            for (before_table, after_table) in original_tables.iter().zip(&reparsed_tables) {
+                assert_eq!(before_table.id, after_table.id);
+                assert_eq!(before_table.label, after_table.label);
+                assert_eq!(before_table.entry_count, after_table.entry_count);
+                assert_eq!(before_table.fields.len(), after_table.fields.len());
+
+                for row in 0..before_table.entry_count {
+                    for field in before_table.fields {
+                        let before = parsed.get_field(before_table.id, row, &field.name).unwrap();
+                        let after = reparsed
+                            .get_field(after_table.id, row, &field.name)
+                            .unwrap();
+
+                        assert_eq!(
+                            before,
+                            after,
+                            "{}: table {:?}, row {}, field {} changed after round-trip",
+                            path.display(),
+                            before_table.label,
+                            row,
+                            field.name,
+                        );
+                    }
+                }
+            }
+        }
+    }
 }

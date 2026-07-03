@@ -68,4 +68,7 @@ impl<K: Key> StringPool<K> {
             id_to_offset: offsets,
         })
     }
+    pub(crate) fn get(&self, id: K) -> Option<&String> {
+        self.map.get(id)
+    }
 }

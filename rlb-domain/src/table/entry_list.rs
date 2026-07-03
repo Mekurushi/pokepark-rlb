@@ -1,15 +1,15 @@
 use crate::entry_schemas::{EntryDeserializer, EntrySerializer};
 use crate::rlb_file::StringId;
 use crate::string_pool::SerializedStringPoolContext;
-use crate::TableEntry;
+use crate::{FieldDescriptor, TableEntry};
 use rlb_error::{Error, Result};
 
 #[derive(Debug, Clone)]
-pub struct TableView<T> {
+pub struct EntryList<T> {
     pub entries: Vec<T>,
     pub terminator: T,
 }
-impl<T: TableEntry> TableView<T> {
+impl<T: TableEntry> EntryList<T> {
     pub fn discover<R, E>(
         data: &[u8],
         root_address: usize,
@@ -32,7 +32,7 @@ impl<T: TableEntry> TableView<T> {
             let mut de = EntryDeserializer::new(record_bytes, offset, resolve_string, is_relocated);
             let record = T::read(&mut de)?;
             if record.is_terminator() {
-                return Ok(TableView {
+                return Ok(EntryList {
                     entries,
                     terminator: record,
                 });
@@ -63,5 +63,8 @@ impl<T: TableEntry> TableView<T> {
         ser.finish(out, T::SIZE)?;
 
         Ok(())
+    }
+    pub fn fields(&self) -> &'static [FieldDescriptor] {
+        T::FIELDS
     }
 }

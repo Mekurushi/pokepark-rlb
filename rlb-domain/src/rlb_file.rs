@@ -3,6 +3,8 @@ use crate::string_pool::StringPool;
 use crate::table::Table;
 use crate::table_collection::TableCollection;
 use crate::util::{checked_u32, resolve_string_from_raw_data};
+use crate::value::ResolvedValue;
+use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
 use rlb_format::{RawFile, TableRecord};
 
@@ -25,6 +27,14 @@ pub struct RLBFile {
     toc: Vec<TocSlot>,
     other_toc: Vec<TocSlot>,
     label_pool: StringPool<LabelId>,
+}
+
+#[derive(Debug)]
+pub struct TableView<'a> {
+    pub id: TableId,
+    pub label: &'a str,
+    pub fields: &'static [FieldDescriptor],
+    pub entry_count: usize,
 }
 
 impl RLBFile {
@@ -127,6 +137,49 @@ impl RLBFile {
 
     pub fn write(self) -> Result<Vec<u8>> {
         self.into_raw()?.serialize_custom()
+    }
+
+    pub fn tables(&self) -> impl Iterator<Item = TableView<'_>> + '_ {
+        self.toc
+            .iter()
+            .chain(self.other_toc.iter())
+            .map(move |slot| {
+                let table = &self
+                    .table_collection
+                    .get(slot.table)
+                    .expect("internal invariant violated: TOC references missing table");
+                let label = self
+                    .label_pool
+                    .get(slot.label)
+                    .expect("internal invariant violated: TOC references missing label");
+                TableView {
+                    id: slot.table,
+                    label,
+                    fields: table.kind.field_descriptors(),
+                    entry_count: table.kind.entry_count(),
+                }
+            })
+    }
+    pub fn get_field(
+        &self,
+        table_id: TableId,
+        entry_index: usize,
+        field: &str,
+    ) -> Option<ResolvedValue> {
+        let raw = self
+            .table_collection
+            .get(table_id)?
+            .kind
+            .get_field(entry_index, field);
+        Some(match raw {
+            Some(Value::Integer(v)) => ResolvedValue::Integer(v),
+            Some(Value::String(None)) => ResolvedValue::String(None),
+            Some(Value::String(Some(id))) => {
+                ResolvedValue::String(Some(self.string_pool.get(id)?.to_owned()))
+            }
+            Some(Value::Boolean(bool)) => ResolvedValue::Boolean(bool),
+            _ => return None, //TODO: if that's really the best way to resolve
+        })
     }
 }
 

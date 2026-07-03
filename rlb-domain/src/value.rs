@@ -25,3 +25,11 @@ impl Value {
         }
     }
 }
+
+//TODO: rename
+#[derive(Debug, Clone, PartialEq)]
+pub enum ResolvedValue {
+    Integer(u32),
+    String(Option<String>),
+    Boolean(bool),
+}

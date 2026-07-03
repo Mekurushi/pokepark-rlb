@@ -63,4 +63,8 @@ impl TableCollection {
             relocations: relocation_offsets,
         })
     }
+
+    pub(crate) fn get(&self, id: TableId) -> Option<&Table> {
+        self.map.get(id)
+    }
 }
