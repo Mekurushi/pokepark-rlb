@@ -181,6 +181,27 @@ impl RLBFile {
             _ => return None, //TODO: if that's really the best way to resolve
         })
     }
+    pub fn set_field(
+        &mut self,
+        table_id: TableId,
+        entry_index: usize,
+        field: &str,
+        value: ResolvedValue,
+    ) -> Result<()> {
+        //TODO: Validation
+        let internal = match value {
+            ResolvedValue::Integer(v) => Value::Integer(v),
+            ResolvedValue::String(None) => Value::String(None),
+            ResolvedValue::String(Some(s)) => Value::String(Some(self.string_pool.intern(s))),
+            ResolvedValue::Boolean(b) => Value::Boolean(b),
+        };
+        let table = self
+            .table_collection
+            .get_mut(table_id)
+            .ok_or_else(|| Error::Validation(format!("unknown TableId {table_id:?}")))?;
+
+        table.kind.set_field(entry_index, field, internal)
+    }
 }
 
 // TODO: temporary solution until better way to handle building is known

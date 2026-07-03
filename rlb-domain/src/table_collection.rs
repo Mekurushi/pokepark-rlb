@@ -67,4 +67,7 @@ impl TableCollection {
     pub(crate) fn get(&self, id: TableId) -> Option<&Table> {
         self.map.get(id)
     }
+    pub(crate) fn get_mut(&mut self, id: TableId) -> Option<&mut Table> {
+        self.map.get_mut(id)
+    }
 }

@@ -110,6 +110,17 @@ _ => Ok(Self::Unknown)
         }
     }
 
+        pub(crate) fn set_field(&mut self, index: usize, field: &str, value: Value) -> Result<()> {
+        match self {
+            $(Self::$schema(view) => {
+                let entry = view.entries.get_mut(index)
+                    .ok_or_else(|| Error::Validation(format!("entry index {index} out of bounds")))?;
+                entry.set(field, value)
+            })*
+            Self::Unknown => Err(Error::Validation("cannot mutate an Unknown table".into())),
+        }
+    }
+
 
 
 }

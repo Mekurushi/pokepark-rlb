@@ -134,4 +134,86 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn set_field_round_trip() {
+        for path in example_files("../examples/wandering")
+            .iter()
+            .chain(&example_files("../examples/script_lists"))
+        {
+            let original = std::fs::read(&path).unwrap();
+
+            let mut parsed =
+                RLBFile::parse(&original).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+
+            // Rewrite every field using set_field.
+            let tables: Vec<_> = parsed
+                .tables()
+                .map(|t| {
+                    (
+                        t.id,
+                        t.entry_count,
+                        t.fields.iter().map(|f| f.name.clone()).collect::<Vec<_>>(),
+                    )
+                })
+                .collect();
+
+            for (table_id, entry_count, field_names) in tables {
+                for row in 0..entry_count {
+                    for field_name in &field_names {
+                        let value = parsed
+                            .get_field(table_id, row, &field_name)
+                            .unwrap()
+                            .clone();
+
+                        parsed.set_field(table_id, row, &field_name, value).unwrap();
+                    }
+                }
+            }
+
+            let written = parsed
+                .clone()
+                .write()
+                .unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+
+            let reparsed =
+                RLBFile::parse(&written).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+
+            let original_tables: Vec<_> = parsed.tables().collect();
+            let reparsed_tables: Vec<_> = reparsed.tables().collect();
+
+            assert_eq!(
+                original_tables.len(),
+                reparsed_tables.len(),
+                "{}",
+                path.display()
+            );
+
+            for (before_table, after_table) in original_tables.iter().zip(&reparsed_tables) {
+                assert_eq!(before_table.id, after_table.id);
+                assert_eq!(before_table.label, after_table.label);
+                assert_eq!(before_table.entry_count, after_table.entry_count);
+                assert_eq!(before_table.fields.len(), after_table.fields.len());
+
+                for row in 0..before_table.entry_count {
+                    for field in before_table.fields {
+                        let before = parsed.get_field(before_table.id, row, &field.name).unwrap();
+                        let after = reparsed
+                            .get_field(after_table.id, row, &field.name)
+                            .unwrap();
+
+                        assert_eq!(
+                            before,
+                            after,
+                            "{}: table {:?}, row {}, field {} changed after set_field round-trip",
+                            path.display(),
+                            before_table.label,
+                            row,
+                            field.name,
+                        );
+                    }
+                }
+            }
+        }
+    }
 }
