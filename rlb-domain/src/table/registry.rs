@@ -1,9 +1,9 @@
+use crate::FieldDescriptor;
+use crate::Value;
 use crate::entry_schemas::TableEntry;
 use crate::macros::declare_tables;
 use crate::rlb_file::StringId;
 use crate::table::entry_list::EntryList;
-use crate::FieldDescriptor;
-use crate::Value;
 use rlb_error::{Error, Result};
 
 declare_tables! {

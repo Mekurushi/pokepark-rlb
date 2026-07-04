@@ -1,7 +1,7 @@
+use crate::Value;
 use crate::rlb_file::StringId;
 use crate::string_pool::SerializedStringPoolContext;
 use crate::util::checked_u32;
-use crate::Value;
 use rlb_error::{Error, Result};
 
 #[derive(Debug)]

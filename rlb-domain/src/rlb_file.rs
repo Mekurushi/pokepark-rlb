@@ -85,11 +85,11 @@ impl RLBFile {
         Self::from_raw(&RawFile::parse(bytes)?)
     }
 
-    fn into_raw(self) -> Result<RawFile> {
+    fn to_raw(&self) -> Result<RawFile> {
         let strings = self.string_pool.serialize()?;
         let labels = self.label_pool.serialize()?;
         let tables = self.table_collection.serialize(&strings)?;
-        let make_records = |toc: Vec<TocSlot>| -> Result<Vec<TableRecord>> {
+        let make_records = |toc: &Vec<TocSlot>| -> Result<Vec<TableRecord>> {
             toc.into_iter()
                 .map(|record| {
                     Ok(TableRecord {
@@ -116,8 +116,8 @@ impl RLBFile {
                 .collect()
         };
 
-        let records = make_records(self.toc)?;
-        let other_records = make_records(self.other_toc)?;
+        let records = make_records(&self.toc)?;
+        let other_records = make_records(&self.other_toc)?;
 
         let data = strings
             .data()
@@ -135,8 +135,8 @@ impl RLBFile {
         )
     }
 
-    pub fn write(self) -> Result<Vec<u8>> {
-        self.into_raw()?.serialize_custom()
+    pub fn write(&self) -> Result<Vec<u8>> {
+        self.to_raw()?.serialize_custom()
     }
 
     pub fn tables(&self) -> impl Iterator<Item = TableView<'_>> + '_ {

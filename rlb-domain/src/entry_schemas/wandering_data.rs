@@ -1,8 +1,8 @@
+use crate::TableEntry;
 use crate::entry_schemas::codec::{EntryDeserializer, EntrySerializer};
 use crate::entry_schemas::{FieldConstraint, FieldKind};
 use crate::rlb_file::StringId;
 use crate::util::checked_bool;
-use crate::TableEntry;
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
 

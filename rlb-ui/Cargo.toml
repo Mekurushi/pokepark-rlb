@@ -1,0 +1,14 @@
+[package]
+name = "rlb-ui"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+rlb-domain = { path = "../rlb-domain" }
+eframe = "0.35.0"
+egui_extras = "0.35.0"
+rfd = "0.17.2"
+
+
+[lints]
+workspace = true
