@@ -2,6 +2,7 @@ use crate::state::{AppState, LoadedFile};
 use eframe::egui;
 use egui_extras::{Column, TableBuilder};
 use rlb_domain::{FieldConstraint, FieldDescriptor, FieldKind, RLBFile, ResolvedValue, TableId};
+use rlb_error::Result;
 
 pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
     let Some(loaded) = &mut state.loaded else {
@@ -13,8 +14,7 @@ pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
         ui.centered_and_justified(|ui| ui.weak("Select a table"));
         return;
     };
-
-    let Some((label, fields, entry_count)) = table_lookup(loaded, table_id) else {
+    let Some((label, fields, entry_count)) = table_lookup(loaded, table_id).ok().flatten() else {
         ui.centered_and_justified(|ui| ui.weak("Table not resolvable"));
         return;
     };
@@ -57,12 +57,13 @@ pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
 fn table_lookup(
     loaded: &LoadedFile,
     table_id: TableId,
-) -> Option<(String, &'static [FieldDescriptor], usize)> {
-    loaded
+) -> Result<Option<(String, &'static [FieldDescriptor], usize)>> {
+    Ok(loaded
         .file
-        .tables()
+        .tables()?
+        .iter()
         .find(|table| table.id == table_id)
-        .map(|table| (table.label.to_owned(), table.fields, table.entry_count))
+        .map(|table| (table.label.to_owned(), table.fields, table.entry_count)))
 }
 
 fn edit_cell(

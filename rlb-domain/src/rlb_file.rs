@@ -90,7 +90,7 @@ impl RLBFile {
         let labels = self.label_pool.serialize()?;
         let tables = self.table_collection.serialize(&strings)?;
         let make_records = |toc: &Vec<TocSlot>| -> Result<Vec<TableRecord>> {
-            toc.into_iter()
+            toc.iter()
                 .map(|record| {
                     Ok(TableRecord {
                         address: checked_u32(
@@ -139,27 +139,34 @@ impl RLBFile {
         self.to_raw()?.serialize_custom()
     }
 
-    pub fn tables(&self) -> impl Iterator<Item = TableView<'_>> + '_ {
+    pub fn tables(&self) -> Result<Vec<TableView<'_>>> {
         self.toc
             .iter()
             .chain(self.other_toc.iter())
-            .map(move |slot| {
-                let table = &self
-                    .table_collection
-                    .get(slot.table)
-                    .expect("internal invariant violated: TOC references missing table");
-                let label = self
-                    .label_pool
-                    .get(slot.label)
-                    .expect("internal invariant violated: TOC references missing label");
-                TableView {
+            .map(|slot| {
+                let table = self.table_collection.get(slot.table).ok_or_else(|| {
+                    Error::Validation(format!(
+                        "table of contents references missing table {:?}",
+                        slot.table
+                    ))
+                })?;
+                let label = self.label_pool.get(slot.label).ok_or_else(|| {
+                    Error::Validation(format!(
+                        "table of contents references missing label {:?}",
+                        slot.label
+                    ))
+                })?;
+
+                Ok(TableView {
                     id: slot.table,
                     label,
                     fields: table.kind.field_descriptors(),
                     entry_count: table.kind.entry_count(),
-                }
+                })
             })
+            .collect()
     }
+
     pub fn get_field(
         &self,
         table_id: TableId,

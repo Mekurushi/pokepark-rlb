@@ -97,8 +97,8 @@ mod tests {
             let reparsed =
                 RLBFile::parse(&written).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
 
-            let original_tables: Vec<_> = parsed.tables().collect();
-            let reparsed_tables: Vec<_> = reparsed.tables().collect();
+            let original_tables: Vec<_> = parsed.tables().expect("requesting tables failed");
+            let reparsed_tables: Vec<_> = reparsed.tables().expect("requesting tables failed");
 
             assert_eq!(
                 original_tables.len(),
@@ -149,11 +149,13 @@ mod tests {
             // Rewrite every field using set_field.
             let tables: Vec<_> = parsed
                 .tables()
+                .expect("requesting tables failed")
+                .iter()
                 .map(|t| {
                     (
                         t.id,
                         t.entry_count,
-                        t.fields.iter().map(|f| f.name.clone()).collect::<Vec<_>>(),
+                        t.fields.iter().map(|f| f.name).collect::<Vec<_>>(),
                     )
                 })
                 .collect();
@@ -179,8 +181,8 @@ mod tests {
             let reparsed =
                 RLBFile::parse(&written).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
 
-            let original_tables: Vec<_> = parsed.tables().collect();
-            let reparsed_tables: Vec<_> = reparsed.tables().collect();
+            let original_tables: Vec<_> = parsed.tables().expect("requesting tables failed");
+            let reparsed_tables: Vec<_> = reparsed.tables().expect("requesting tables failed");
 
             assert_eq!(
                 original_tables.len(),

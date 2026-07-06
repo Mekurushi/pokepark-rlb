@@ -17,7 +17,11 @@ pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
     } = loaded;
 
     egui::ScrollArea::vertical().show(ui, |ui| {
-        for table in file.tables() {
+        let Ok(tables) = file.tables() else {
+            ui.weak("Unable to read tables");
+            return;
+        };
+        for table in tables {
             let selected = *selected_table == Some(table.id);
             let text = format!("{}  ({})", table.label, table.entry_count);
             if ui.selectable_label(selected, text).clicked() {

@@ -3,9 +3,9 @@ pub mod fsb_file_list;
 pub mod script_list;
 pub mod wandering_data;
 
+use crate::Value;
 pub(crate) use crate::entry_schemas::codec::{EntryDeserializer, EntrySerializer};
 use crate::rlb_file::StringId;
-use crate::Value;
 use rlb_error::Result;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

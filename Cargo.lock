@@ -2813,6 +2813,7 @@ dependencies = [
  "egui_extras",
  "rfd",
  "rlb-domain",
+ "rlb-error",
 ]
 
 [[package]]
