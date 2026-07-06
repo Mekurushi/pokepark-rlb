@@ -1,8 +1,8 @@
-use crate::TableEntry;
 use crate::entry_schemas::codec::{EntryDeserializer, EntrySerializer};
-use crate::entry_schemas::{FieldConstraint, FieldKind};
+use crate::entry_schemas::{FieldConstraint, FieldKind, Terminator};
 use crate::rlb_file::StringId;
 use crate::util::checked_bool;
+use crate::TableEntry;
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
 
@@ -16,13 +16,8 @@ pub struct WanderingDataTable {
 
 impl TableEntry for WanderingDataTable {
     const SIZE: usize = 0xC;
-    const FIELDS: &'static [FieldDescriptor] = &WANDERING_DATA_FIELDS;
+    const FIELDS: &'static [FieldDescriptor] = WANDERING_DATA_FIELDS;
 
-    fn is_terminator(&self) -> bool {
-        self.pokemon_unlock_id == Value::Integer(0xFFFFFFFF)
-            && self.pokemon_friendship_id == Value::Integer(0xFFFFFFFF)
-            && self.enabled == Value::Boolean(false)
-    }
     fn get(&self, field: &str) -> Option<Value> {
         match field {
             "pokemon_unlock_id" => Some(self.pokemon_unlock_id),
@@ -60,6 +55,27 @@ impl TableEntry for WanderingDataTable {
         ser.write_u8(u8::from(self.enabled.as_bool()?));
         ser.write_pad(&self.pad);
         Ok(())
+    }
+}
+
+impl Terminator for WanderingDataTable {
+    const SIZE: usize = <Self as TableEntry>::SIZE;
+
+    fn recognize<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Option<Self>>
+    where
+        R: FnMut(u32) -> Result<StringId>,
+        E: FnMut(u32) -> bool,
+    {
+        let candidate = <Self as TableEntry>::read(de)?;
+        let is_terminator = candidate.pokemon_unlock_id == Value::Integer(0xFFFF_FFFF)
+            && candidate.pokemon_friendship_id == Value::Integer(0xFFFF_FFFF)
+            && candidate.enabled == Value::Boolean(false);
+
+        Ok(is_terminator.then_some(candidate))
+    }
+
+    fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()> {
+        <Self as TableEntry>::write(self, ser)
     }
 }
 

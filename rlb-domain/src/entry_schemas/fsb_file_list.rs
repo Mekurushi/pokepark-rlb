@@ -1,7 +1,7 @@
-use crate::TableEntry;
 use crate::entry_schemas::codec::{EntryDeserializer, EntrySerializer};
-use crate::entry_schemas::{FieldConstraint, FieldKind};
+use crate::entry_schemas::{FieldConstraint, FieldKind, Terminator};
 use crate::rlb_file::StringId;
+use crate::TableEntry;
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
 
@@ -12,10 +12,7 @@ pub struct FsbFileListData {
 
 impl TableEntry for FsbFileListData {
     const SIZE: usize = 0x4;
-    const FIELDS: &'static [FieldDescriptor] = &FSB_FILE_LIST_FIELDS;
-    fn is_terminator(&self) -> bool {
-        self.script_name == Value::String(None)
-    }
+    const FIELDS: &'static [FieldDescriptor] = FSB_FILE_LIST_FIELDS;
     fn get(&self, field: &str) -> Option<Value> {
         match field {
             "script_name" => Some(self.script_name),
@@ -47,6 +44,25 @@ impl TableEntry for FsbFileListData {
     fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()> {
         ser.write_string_pointer(self.script_name)?;
         Ok(())
+    }
+}
+
+impl Terminator for FsbFileListData {
+    const SIZE: usize = <Self as TableEntry>::SIZE;
+
+    fn recognize<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Option<Self>>
+    where
+        R: FnMut(u32) -> Result<StringId>,
+        E: FnMut(u32) -> bool,
+    {
+        let candidate = <Self as TableEntry>::read(de)?;
+        let is_terminator = candidate.script_name == Value::String(None);
+
+        Ok(is_terminator.then_some(candidate))
+    }
+
+    fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()> {
+        <Self as TableEntry>::write(self, ser)
     }
 }
 

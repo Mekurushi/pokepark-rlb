@@ -1,5 +1,6 @@
-pub mod entry_list;
+pub mod body;
 pub mod registry;
+pub mod terminated_list;
 
 use crate::rlb_file::StringId;
 use crate::string_pool::SerializedStringPoolContext;

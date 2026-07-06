@@ -1,7 +1,7 @@
-use crate::TableEntry;
 use crate::entry_schemas::codec::{EntryDeserializer, EntrySerializer};
-use crate::entry_schemas::{FieldConstraint, FieldKind};
+use crate::entry_schemas::{FieldConstraint, FieldKind, Terminator};
 use crate::rlb_file::StringId;
+use crate::TableEntry;
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
 
@@ -29,15 +29,7 @@ pub struct ScriptListEntry {
 
 impl TableEntry for ScriptListEntry {
     const SIZE: usize = 0x44;
-    const FIELDS: &'static [FieldDescriptor] = &SCRIPT_LIST_FIELDS;
-
-    fn is_terminator(&self) -> bool {
-        self.name == Value::String(None)
-            && self.object_id == Value::Integer(0)
-            && self.minimum_chapter == Value::Integer(0)
-            && self.medium_chapter == Value::Integer(0)
-            && self.maximum_chapter == Value::Integer(0)
-    }
+    const FIELDS: &'static [FieldDescriptor] = SCRIPT_LIST_FIELDS;
 
     fn get(&self, field: &str) -> Option<Value> {
         match field {
@@ -135,6 +127,30 @@ impl TableEntry for ScriptListEntry {
         Ok(())
     }
 }
+
+impl Terminator for ScriptListEntry {
+    const SIZE: usize = <Self as TableEntry>::SIZE;
+
+    fn recognize<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Option<Self>>
+    where
+        R: FnMut(u32) -> Result<StringId>,
+        E: FnMut(u32) -> bool,
+    {
+        let candidate = <Self as TableEntry>::read(de)?;
+        let is_terminator = candidate.name == Value::String(None)
+            && candidate.object_id == Value::Integer(0)
+            && candidate.minimum_chapter == Value::Integer(0)
+            && candidate.medium_chapter == Value::Integer(0)
+            && candidate.maximum_chapter == Value::Integer(0);
+
+        Ok(is_terminator.then_some(candidate))
+    }
+
+    fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()> {
+        <Self as TableEntry>::write(self, ser)
+    }
+}
+
 pub const SCRIPT_LIST_FIELDS: &[FieldDescriptor] = &[
     FieldDescriptor {
         name: "name",

@@ -1,15 +1,13 @@
-use crate::FieldDescriptor;
-use crate::Value;
-use crate::entry_schemas::TableEntry;
 use crate::macros::declare_tables;
-use crate::rlb_file::StringId;
-use crate::table::entry_list::EntryList;
-use rlb_error::{Error, Result};
+use crate::table::terminated_list::TerminatedList;
 
 declare_tables! {
 
     ScriptList {
-        entry: crate::entry_schemas::script_list::ScriptListEntry,
+        body: TerminatedList<
+            crate::entry_schemas::script_list::ScriptListEntry,
+            crate::entry_schemas::script_list::ScriptListEntry,
+        >,
 
         tables: [
             "BackFromAttractionScriptList",
@@ -23,16 +21,19 @@ declare_tables! {
         ]
     }
 
-
     SinglePointer {
-        entry: crate::entry_schemas::fsb_file_list::FsbFileListData,
+        body: TerminatedList<crate::entry_schemas::fsb_file_list::FsbFileListData,crate::entry_schemas::fsb_file_list::FsbFileListData,>,
 
         tables: [
             "FsbFileListData",
         ]
     }
+
     WanderingData {
-        entry: crate::entry_schemas::wandering_data::WanderingDataTable,
+        body: TerminatedList<
+            crate::entry_schemas::wandering_data::WanderingDataTable,
+            crate::entry_schemas::wandering_data::WanderingDataTable,
+        >,
 
         tables: [
             "WanderingDataTable",
