@@ -1,6 +1,7 @@
 mod codec;
 mod collection;
 mod field;
+mod parse_context;
 mod schemas;
 mod serialization;
 
@@ -13,6 +14,7 @@ use rlb_error::{Error, Result};
 
 pub(crate) use collection::TableCollection;
 pub use field::{FieldConstraint, FieldDescriptor, FieldKind};
+pub(crate) use parse_context::ParseContext;
 
 slotmap::new_key_type! {
     pub struct TableId;
@@ -31,17 +33,7 @@ pub(crate) struct Table {
 }
 
 impl Table {
-    pub(crate) fn parse<R, E>(
-        name: &str,
-        data: &[u8],
-        offset: usize,
-        resolve_string: &mut R,
-        is_relocated: &mut E,
-    ) -> Result<Self>
-    where
-        R: FnMut(u32) -> Result<String>,
-        E: FnMut(u32) -> bool,
-    {
+    pub(crate) fn parse(name: &str, context: &ParseContext<'_>, offset: usize) -> Result<Self> {
         let kind = match name {
             "BackFromAttractionScriptList"
             | "ReplaceScriptList"
@@ -50,24 +42,13 @@ impl Table {
             | "HitDashScriptList"
             | "HitThunderboltScriptList"
             | "TimeOutScriptList"
-            | "TouchAreaScriptList" => TableKind::ScriptList(ScriptListTable::parse(
-                data,
-                offset,
-                resolve_string,
-                is_relocated,
-            )?),
-            "FsbFileListData" => TableKind::FsbFileList(FsbFileListTable::parse(
-                data,
-                offset,
-                resolve_string,
-                is_relocated,
-            )?),
-            "WanderingDataTable" => TableKind::WanderingData(WanderingDataTable::parse(
-                data,
-                offset,
-                resolve_string,
-                is_relocated,
-            )?),
+            | "TouchAreaScriptList" => {
+                TableKind::ScriptList(ScriptListTable::parse(context, offset)?)
+            }
+            "FsbFileListData" => TableKind::FsbFileList(FsbFileListTable::parse(context, offset)?),
+            "WanderingDataTable" => {
+                TableKind::WanderingData(WanderingDataTable::parse(context, offset)?)
+            }
             _ => {
                 return Err(Error::UnknownTableSchema {
                     name: name.to_owned(),

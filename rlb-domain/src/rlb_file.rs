@@ -1,6 +1,6 @@
 use crate::relocation::RelocationTable;
 use crate::string_pool::StringPool;
-use crate::table::{Table, TableCollection, TableId};
+use crate::table::{ParseContext, Table, TableCollection, TableId};
 use crate::util::{checked_u32, resolve_string_from_raw_data};
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
@@ -37,15 +37,15 @@ impl RLBFile {
 
         let mut table_collection: TableCollection = TableCollection::new();
         let relocations = RelocationTable::from_raw(relocation_table);
+        let parse_context = ParseContext::new(data, &relocations);
 
         let mut pending_toc = build_pending_tables(records, table_labels)?;
         let mut pending_other_toc = build_pending_tables(other_records, table_labels)?;
         parse_tables(
             &mut pending_toc,
             &mut pending_other_toc,
-            data,
             &mut table_collection,
-            &relocations,
+            &parse_context,
         )?;
         let toc = finish_toc(pending_toc)?;
         let other_toc = finish_toc(pending_other_toc)?;
@@ -170,9 +170,8 @@ fn build_pending_tables(records: &[TableRecord], table_labels: &[u8]) -> Result<
 fn parse_tables(
     pending_toc: &mut [PendingTable],
     pending_other_toc: &mut [PendingTable],
-    data: &[u8],
     tables: &mut TableCollection,
-    relocations: &RelocationTable,
+    context: &ParseContext<'_>,
 ) -> Result<()> {
     let mut parse_order: Vec<&mut PendingTable> = pending_toc
         .iter_mut()
@@ -181,17 +180,7 @@ fn parse_tables(
     parse_order.sort_by_key(|pending| pending.root_address);
 
     for pending in parse_order {
-        let mut resolve_string =
-            |offset: u32| -> Result<String> { resolve_string_from_raw_data(data, offset as usize) };
-        let mut is_relocated = |offset: u32| -> bool { relocations.is_relocated(offset) };
-
-        let table = Table::parse(
-            &pending.label,
-            data,
-            pending.root_address,
-            &mut resolve_string,
-            &mut is_relocated,
-        )?;
+        let table = Table::parse(&pending.label, context, pending.root_address)?;
         pending.parsed_table = Some(tables.insert(table));
     }
 

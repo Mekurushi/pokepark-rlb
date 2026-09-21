@@ -1,3 +1,4 @@
+use crate::table::ParseContext;
 use crate::table::codec::{EntryDeserializer, EntrySerializer};
 use crate::table::field::{FieldConstraint, FieldKind};
 use crate::table::serialization::RelocatableTable;
@@ -13,26 +14,12 @@ pub(crate) struct FsbFileListTable {
 impl FsbFileListTable {
     const ENTRY_SIZE: usize = FsbFileListData::SIZE;
 
-    pub(crate) fn parse<R, E>(
-        data: &[u8],
-        root_address: usize,
-        resolve_string: &mut R,
-        is_relocated: &mut E,
-    ) -> Result<Self>
-    where
-        R: FnMut(u32) -> Result<String>,
-        E: FnMut(u32) -> bool,
-    {
+    pub(crate) fn parse(context: &ParseContext<'_>, root_address: usize) -> Result<Self> {
         let mut entries = Vec::new();
         let mut offset = root_address;
 
         loop {
-            let bytes =
-                data.get(offset..offset + Self::ENTRY_SIZE)
-                    .ok_or(Error::UnexpectedEof {
-                        context: "parsing FsbFileList record",
-                    })?;
-            let mut de = EntryDeserializer::new(bytes, offset, resolve_string, is_relocated);
+            let mut de = EntryDeserializer::new(context, offset);
             let candidate = FsbFileListData::read(&mut de)?;
 
             if candidate.script_name == Value::String(None) {
@@ -108,11 +95,7 @@ impl FsbFileListData {
         Ok(())
     }
 
-    pub(crate) fn read<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Self>
-    where
-        R: FnMut(u32) -> Result<String>,
-        E: FnMut(u32) -> bool,
-    {
+    pub(crate) fn read(de: &mut EntryDeserializer<'_, '_>) -> Result<Self> {
         let script = de.read_string_pointer()?;
 
         Ok(Self {
