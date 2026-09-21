@@ -1,15 +1,11 @@
 use crate::relocation::RelocationTable;
 use crate::string_pool::StringPool;
-use crate::table::Table;
-use crate::table_collection::TableCollection;
+use crate::table::collection::TableCollection;
+use crate::table::{Table, TableId};
 use crate::util::{checked_u32, resolve_string_from_raw_data};
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
 use rlb_format::{RawFile, TableRecord};
-
-slotmap::new_key_type! {
-    pub struct TableId;
-}
 
 #[derive(Debug, Clone)]
 pub struct TocSlot {

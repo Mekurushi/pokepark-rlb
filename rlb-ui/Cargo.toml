@@ -5,7 +5,6 @@ edition.workspace = true
 
 [dependencies]
 rlb-domain = { path = "../rlb-domain" }
-rlb-error = { path = "../rlb-error" }
 eframe = "0.35.0"
 egui_extras = "0.35.0"
 rfd = "0.17.2"

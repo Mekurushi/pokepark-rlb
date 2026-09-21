@@ -1,12 +1,11 @@
-mod entry_schemas;
 mod relocation;
 mod rlb_file;
 mod string_pool;
 mod table;
-mod table_collection;
 mod util;
 mod value;
 
-pub use entry_schemas::{FieldConstraint, FieldDescriptor, FieldKind};
-pub use rlb_file::{RLBFile, TableId, TableView};
+pub use rlb_error::{Error, Result};
+pub use rlb_file::{RLBFile, TableView};
+pub use table::{FieldConstraint, FieldDescriptor, FieldKind, TableId};
 pub use value::Value;

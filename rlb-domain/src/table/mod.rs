@@ -1,9 +1,20 @@
-use crate::entry_schemas::fsb_file_list::FsbFileListTable;
-use crate::entry_schemas::script_list::ScriptListTable;
-use crate::entry_schemas::wandering_data::WanderingDataTable;
+mod codec;
+pub(crate) mod collection;
+mod field;
+mod schemas;
+
+use crate::Value;
 use crate::string_pool::StringPool;
-use crate::{FieldDescriptor, Value};
+use crate::table::schemas::fsb_file_list::FsbFileListTable;
+use crate::table::schemas::script_list::ScriptListTable;
+use crate::table::schemas::wandering_data::WanderingDataTable;
 use rlb_error::{Error, Result};
+
+pub use field::{FieldConstraint, FieldDescriptor, FieldKind};
+
+slotmap::new_key_type! {
+    pub struct TableId;
+}
 
 #[derive(Debug, Clone)]
 enum TableKind {

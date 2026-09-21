@@ -1,8 +1,3 @@
-mod codec;
-pub mod fsb_file_list;
-pub mod script_list;
-pub mod wandering_data;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FieldKind {
     Integer,

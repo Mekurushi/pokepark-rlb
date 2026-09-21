@@ -1,6 +1,5 @@
-use crate::rlb_file::TableId;
 use crate::string_pool::StringPool;
-use crate::table::Table;
+use crate::table::{Table, TableId};
 use rlb_error::Result;
 use slotmap::SlotMap;
 use std::collections::HashMap;

@@ -1,8 +1,7 @@
 use crate::state::{AppState, LoadedFile};
 use eframe::egui;
 use egui_extras::{Column, TableBuilder};
-use rlb_domain::{FieldConstraint, FieldDescriptor, FieldKind, RLBFile, TableId, Value};
-use rlb_error::Result;
+use rlb_domain::{FieldConstraint, FieldDescriptor, FieldKind, RLBFile, Result, TableId, Value};
 
 pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
     let Some(loaded) = &mut state.loaded else {

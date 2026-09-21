@@ -1,6 +1,6 @@
-use crate::entry_schemas::codec::{EntryDeserializer, EntrySerializer};
-use crate::entry_schemas::{FieldConstraint, FieldKind};
 use crate::string_pool::StringPool;
+use crate::table::codec::{EntryDeserializer, EntrySerializer};
+use crate::table::field::{FieldConstraint, FieldKind};
 use crate::util::checked_bool;
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
