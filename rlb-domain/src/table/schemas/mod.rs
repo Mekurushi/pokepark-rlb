@@ -1,4 +1,5 @@
 pub(crate) mod disposition_data_header;
+pub(crate) mod flag_table;
 pub(crate) mod fsb_file_list;
 pub(crate) mod item_disposition_data;
 pub(crate) mod item_kind_total_num_data;

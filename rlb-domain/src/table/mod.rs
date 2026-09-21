@@ -7,6 +7,7 @@ mod serialization;
 
 use crate::Value;
 use crate::table::schemas::disposition_data_header::DispositionDataHeaderTable;
+use crate::table::schemas::flag_table::FlagTable;
 use crate::table::schemas::fsb_file_list::FsbFileListTable;
 use crate::table::schemas::item_disposition_data::ItemDispositionDataTable;
 use crate::table::schemas::item_kind_total_num_data::ItemKindTotalNumDataTable;
@@ -32,6 +33,7 @@ enum TableKind {
     PokemonDispositionData(PokemonDispositionDataTable),
     ItemDispositionData(ItemDispositionDataTable),
     ItemKindTotalNumData(ItemKindTotalNumDataTable),
+    Flag(FlagTable),
     ScriptList(ScriptListTable),
     FsbFileList(FsbFileListTable),
     WanderingData(WanderingDataTable),
@@ -60,6 +62,7 @@ impl Table {
             "itemKindTotalNumData" => {
                 TableKind::ItemKindTotalNumData(ItemKindTotalNumDataTable::parse(context, offset)?)
             }
+            "FlagTable" => TableKind::Flag(FlagTable::parse(context, offset)?),
             "BackFromAttractionScriptList"
             | "ReplaceScriptList"
             | "CheckObjectScriptList"
@@ -91,6 +94,7 @@ impl Table {
             TableKind::PokemonDispositionData(table) => table.serialize(),
             TableKind::ItemDispositionData(table) => table.serialize(),
             TableKind::ItemKindTotalNumData(table) => table.serialize(),
+            TableKind::Flag(table) => table.serialize(),
             TableKind::ScriptList(table) => table.serialize(),
             TableKind::FsbFileList(table) => table.serialize(),
             TableKind::WanderingData(table) => table.serialize(),
@@ -104,6 +108,7 @@ impl Table {
             TableKind::PokemonDispositionData(table) => table.entry_count(),
             TableKind::ItemDispositionData(table) => table.entry_count(),
             TableKind::ItemKindTotalNumData(table) => table.entry_count(),
+            TableKind::Flag(table) => table.entry_count(),
             TableKind::ScriptList(table) => table.entry_count(),
             TableKind::FsbFileList(table) => table.entry_count(),
             TableKind::WanderingData(table) => table.entry_count(),
@@ -117,6 +122,7 @@ impl Table {
             TableKind::PokemonDispositionData(table) => table.fields(),
             TableKind::ItemDispositionData(table) => table.fields(),
             TableKind::ItemKindTotalNumData(table) => table.fields(),
+            TableKind::Flag(table) => table.fields(),
             TableKind::ScriptList(table) => table.fields(),
             TableKind::FsbFileList(table) => table.fields(),
             TableKind::WanderingData(table) => table.fields(),
@@ -130,6 +136,7 @@ impl Table {
             TableKind::PokemonDispositionData(table) => table.get_field(index, field),
             TableKind::ItemDispositionData(table) => table.get_field(index, field),
             TableKind::ItemKindTotalNumData(table) => table.get_field(index, field),
+            TableKind::Flag(table) => table.get_field(index, field),
             TableKind::ScriptList(table) => table.get_field(index, field),
             TableKind::FsbFileList(table) => table.get_field(index, field),
             TableKind::WanderingData(table) => table.get_field(index, field),
@@ -143,6 +150,7 @@ impl Table {
             TableKind::PokemonDispositionData(table) => table.set_field(index, field, value),
             TableKind::ItemDispositionData(table) => table.set_field(index, field, value),
             TableKind::ItemKindTotalNumData(table) => table.set_field(index, field, value),
+            TableKind::Flag(table) => table.set_field(index, field, value),
             TableKind::ScriptList(table) => table.set_field(index, field, value),
             TableKind::FsbFileList(table) => table.set_field(index, field, value),
             TableKind::WanderingData(table) => table.set_field(index, field, value),
