@@ -39,7 +39,7 @@ impl TableKind {
                 $(
                     $name => {
                         return Ok(Self::$schema(
-                            <$body as crate::table::body::TableBody>::discover(
+                            <$body>::discover(
                                 data,
                                 offset,
                                 resolve_string,
@@ -63,9 +63,7 @@ impl TableKind {
     ) -> rlb_error::Result<()> {
         match self {
             $(
-                Self::$schema(body) => crate::table::body::TableBody::serialize(
-                    body, out, base_offset, strings, relocations,
-                ),
+                Self::$schema(body) => body.serialize(out, base_offset, strings, relocations),
             )*
             Self::Unknown => Ok(()),
         }
@@ -77,7 +75,7 @@ impl TableKind {
     ) -> rlb_error::Result<()> {
         match self {
             $(
-                Self::$schema(body) => crate::table::body::TableBody::visit_strings(body, visit),
+                Self::$schema(body) => body.visit_strings(visit),
             )*
             Self::Unknown => Ok(()),
         }
@@ -85,21 +83,21 @@ impl TableKind {
 
     pub(crate) fn entry_count(&self) -> usize {
         match self {
-            $(Self::$schema(body) => crate::table::body::TableBody::entry_count(body),)*
+            $(Self::$schema(body) => body.entry_count(),)*
             Self::Unknown => 0,
         }
     }
 
     pub(crate) fn field_descriptors(&self) -> &'static [crate::FieldDescriptor] {
         match self {
-            $(Self::$schema(body) => crate::table::body::TableBody::fields(body),)*
+            $(Self::$schema(body) => body.fields(),)*
             Self::Unknown => &[],
         }
     }
 
     pub(crate) fn get_field(&self, index: usize, field: &str) -> Option<crate::Value> {
         match self {
-            $(Self::$schema(body) => crate::table::body::TableBody::get_field(body, index, field),)*
+            $(Self::$schema(body) => body.get_field(index, field),)*
             Self::Unknown => None,
         }
     }
@@ -111,7 +109,7 @@ impl TableKind {
         value: crate::Value,
     ) -> rlb_error::Result<()> {
         match self {
-            $(Self::$schema(body) => crate::table::body::TableBody::set_field(body, index, field, value),)*
+            $(Self::$schema(body) => body.set_field(index, field, value),)*
             Self::Unknown => Err(rlb_error::Error::Validation("cannot mutate an Unknown table".into())),
         }
     }
