@@ -14,7 +14,7 @@ pub(crate) struct FsbFileListTable {
 impl FsbFileListTable {
     const ENTRY_SIZE: usize = <FsbFileListData as TableEntry>::SIZE;
 
-    pub(crate) fn discover<R, E>(
+    pub(crate) fn parse<R, E>(
         data: &[u8],
         root_address: usize,
         resolve_string: &mut R,

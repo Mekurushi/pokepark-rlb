@@ -10,7 +10,7 @@ pub struct Table {
 }
 
 impl Table {
-    pub fn resolve<R, E>(
+    pub fn parse<R, E>(
         name: &str,
         data: &[u8],
         offset: usize,
@@ -22,7 +22,7 @@ impl Table {
         E: FnMut(u32) -> bool,
     {
         Ok(Self {
-            kind: TableKind::discover(name, data, offset, resolve_string, is_relocated)?,
+            kind: TableKind::parse(name, data, offset, resolve_string, is_relocated)?,
         })
     }
 

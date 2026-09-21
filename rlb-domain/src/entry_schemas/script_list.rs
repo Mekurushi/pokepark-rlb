@@ -14,7 +14,7 @@ pub(crate) struct ScriptListTable {
 impl ScriptListTable {
     const ENTRY_SIZE: usize = <ScriptListEntry as TableEntry>::SIZE;
 
-    pub(crate) fn discover<R, E>(
+    pub(crate) fn parse<R, E>(
         data: &[u8],
         root_address: usize,
         resolve_string: &mut R,

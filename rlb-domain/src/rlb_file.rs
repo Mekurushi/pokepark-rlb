@@ -200,7 +200,7 @@ fn parse_tables(
             |offset: u32| -> Result<String> { resolve_string_from_raw_data(data, offset as usize) };
         let mut is_relocated = |offset: u32| -> bool { relocations.is_relocated(offset) };
 
-        let table = Table::resolve(
+        let table = Table::parse(
             &pending.label,
             data,
             pending.root_address,
