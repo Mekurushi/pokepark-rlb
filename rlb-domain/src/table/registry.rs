@@ -10,7 +10,6 @@ pub(crate) enum TableKind {
     ScriptList(ScriptListTable),
     FsbFileList(FsbFileListTable),
     WanderingData(WanderingDataTable),
-    Unknown, // TODO: error on Unknown
 }
 
 impl TableKind {
@@ -51,7 +50,9 @@ impl TableKind {
                 resolve_string,
                 is_relocated,
             )?)),
-            _ => Ok(Self::Unknown),
+            _ => Err(Error::UnknownTableSchema {
+                name: name.to_owned(),
+            }),
         }
     }
 
@@ -66,7 +67,6 @@ impl TableKind {
             Self::ScriptList(table) => table.serialize(out, base_offset, strings, relocations),
             Self::FsbFileList(table) => table.serialize(out, base_offset, strings, relocations),
             Self::WanderingData(table) => table.serialize(out, base_offset, strings, relocations),
-            Self::Unknown => Ok(()),
         }
     }
 
@@ -75,7 +75,6 @@ impl TableKind {
             Self::ScriptList(table) => table.visit_strings(visit),
             Self::FsbFileList(table) => table.visit_strings(visit),
             Self::WanderingData(table) => table.visit_strings(visit),
-            Self::Unknown => Ok(()),
         }
     }
 
@@ -84,7 +83,6 @@ impl TableKind {
             Self::ScriptList(table) => table.entry_count(),
             Self::FsbFileList(table) => table.entry_count(),
             Self::WanderingData(table) => table.entry_count(),
-            Self::Unknown => 0,
         }
     }
 
@@ -93,7 +91,6 @@ impl TableKind {
             Self::ScriptList(table) => table.fields(),
             Self::FsbFileList(table) => table.fields(),
             Self::WanderingData(table) => table.fields(),
-            Self::Unknown => &[],
         }
     }
 
@@ -102,7 +99,6 @@ impl TableKind {
             Self::ScriptList(table) => table.get_field(index, field),
             Self::FsbFileList(table) => table.get_field(index, field),
             Self::WanderingData(table) => table.get_field(index, field),
-            Self::Unknown => None,
         }
     }
 
@@ -111,7 +107,6 @@ impl TableKind {
             Self::ScriptList(table) => table.set_field(index, field, value),
             Self::FsbFileList(table) => table.set_field(index, field, value),
             Self::WanderingData(table) => table.set_field(index, field, value),
-            Self::Unknown => Err(Error::Validation("cannot mutate an Unknown table".into())),
         }
     }
 }
