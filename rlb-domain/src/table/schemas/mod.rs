@@ -1,3 +1,4 @@
+pub(crate) mod attraction_ranking;
 pub(crate) mod disposition_data_header;
 pub(crate) mod flag_table;
 pub(crate) mod fsb_file_list;

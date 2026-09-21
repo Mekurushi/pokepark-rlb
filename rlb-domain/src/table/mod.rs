@@ -6,6 +6,7 @@ mod schemas;
 mod serialization;
 
 use crate::Value;
+use crate::table::schemas::attraction_ranking::AttractionRankingTable;
 use crate::table::schemas::disposition_data_header::DispositionDataHeaderTable;
 use crate::table::schemas::flag_table::FlagTable;
 use crate::table::schemas::fsb_file_list::FsbFileListTable;
@@ -28,6 +29,7 @@ slotmap::new_key_type! {
 
 #[derive(Debug, Clone)]
 enum TableKind {
+    AttractionRanking(AttractionRankingTable),
     DispositionDataHeader(DispositionDataHeaderTable),
     PlayerDispositionData(PlayerDispositionDataTable),
     PokemonDispositionData(PokemonDispositionDataTable),
@@ -47,6 +49,9 @@ pub(crate) struct Table {
 impl Table {
     pub(crate) fn parse(name: &str, context: &ParseContext<'_>, offset: usize) -> Result<Self> {
         let kind = match name {
+            "AttractionRanking" => {
+                TableKind::AttractionRanking(AttractionRankingTable::parse(context, offset)?)
+            }
             "dispositionDataHeader" => TableKind::DispositionDataHeader(
                 DispositionDataHeaderTable::parse(context, offset)?,
             ),
@@ -89,6 +94,7 @@ impl Table {
 
     pub(crate) fn serialize(&self) -> Result<RelocatableTable<'_>> {
         match &self.kind {
+            TableKind::AttractionRanking(table) => table.serialize(),
             TableKind::DispositionDataHeader(table) => table.serialize(),
             TableKind::PlayerDispositionData(table) => table.serialize(),
             TableKind::PokemonDispositionData(table) => table.serialize(),
@@ -103,6 +109,7 @@ impl Table {
 
     pub(crate) fn entry_count(&self) -> usize {
         match &self.kind {
+            TableKind::AttractionRanking(table) => table.entry_count(),
             TableKind::DispositionDataHeader(table) => table.entry_count(),
             TableKind::PlayerDispositionData(table) => table.entry_count(),
             TableKind::PokemonDispositionData(table) => table.entry_count(),
@@ -117,6 +124,7 @@ impl Table {
 
     pub(crate) fn field_descriptors(&self) -> &'static [FieldDescriptor] {
         match &self.kind {
+            TableKind::AttractionRanking(table) => table.fields(),
             TableKind::DispositionDataHeader(table) => table.fields(),
             TableKind::PlayerDispositionData(table) => table.fields(),
             TableKind::PokemonDispositionData(table) => table.fields(),
@@ -131,6 +139,7 @@ impl Table {
 
     pub(crate) fn get_field(&self, index: usize, field: &str) -> Option<Value> {
         match &self.kind {
+            TableKind::AttractionRanking(table) => table.get_field(index, field),
             TableKind::DispositionDataHeader(table) => table.get_field(index, field),
             TableKind::PlayerDispositionData(table) => table.get_field(index, field),
             TableKind::PokemonDispositionData(table) => table.get_field(index, field),
@@ -145,6 +154,7 @@ impl Table {
 
     pub(crate) fn set_field(&mut self, index: usize, field: &str, value: Value) -> Result<()> {
         match &mut self.kind {
+            TableKind::AttractionRanking(table) => table.set_field(index, field, value),
             TableKind::DispositionDataHeader(table) => table.set_field(index, field, value),
             TableKind::PlayerDispositionData(table) => table.set_field(index, field, value),
             TableKind::PokemonDispositionData(table) => table.set_field(index, field, value),
