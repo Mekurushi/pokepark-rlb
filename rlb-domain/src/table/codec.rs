@@ -21,8 +21,16 @@ impl<'a> EntrySerializer<'a> {
     pub(crate) fn write_u8(&mut self, v: u8) {
         self.buffer.push(v);
     }
-    
+
+    pub(crate) fn write_u16(&mut self, v: u16) {
+        self.buffer.extend_from_slice(&v.to_be_bytes());
+    }
+
     pub(crate) fn write_u32(&mut self, v: u32) {
+        self.buffer.extend_from_slice(&v.to_be_bytes());
+    }
+
+    pub(crate) fn write_f32(&mut self, v: f32) {
         self.buffer.extend_from_slice(&v.to_be_bytes());
     }
 
@@ -48,6 +56,9 @@ impl<'a> EntrySerializer<'a> {
             },
             Value::Integer(_) => Err(Error::Validation(
                 "string_pointer field received an Integer value".into(),
+            )),
+            Value::Float(_) => Err(Error::Validation(
+                "string_pointer field received a Float value".into(),
             )),
             Value::Boolean(_) => Err(Error::Validation(
                 "string_pointer field received an Boolean value".into(),
@@ -95,11 +106,25 @@ impl<'context, 'data> EntryDeserializer<'context, 'data> {
         Ok(v)
     }
 
+    pub(crate) fn read_u16(&mut self) -> Result<u16> {
+        let mut b = [0; 2];
+        b.copy_from_slice(self.context.bytes_at(self.absolute_offset(), 2)?);
+        self.cursor += 2;
+        Ok(u16::from_be_bytes(b))
+    }
+
     pub(crate) fn read_u32(&mut self) -> Result<u32> {
         let mut b = [0; 4];
         b.copy_from_slice(self.context.bytes_at(self.absolute_offset(), 4)?);
         self.cursor += 4;
         Ok(u32::from_be_bytes(b))
+    }
+
+    pub(crate) fn read_f32(&mut self) -> Result<f32> {
+        let mut b = [0; 4];
+        b.copy_from_slice(self.context.bytes_at(self.absolute_offset(), 4)?);
+        self.cursor += 4;
+        Ok(f32::from_be_bytes(b))
     }
 
     pub(crate) fn read_pad<const N: usize>(&mut self) -> Result<[u8; N]> {

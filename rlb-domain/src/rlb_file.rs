@@ -37,10 +37,17 @@ impl RLBFile {
 
         let mut table_collection: TableCollection = TableCollection::new();
         let relocations = RelocationTable::from_raw(relocation_table);
-        let parse_context = ParseContext::new(data, &relocations);
 
         let mut pending_toc = build_pending_tables(records, table_labels)?;
         let mut pending_other_toc = build_pending_tables(other_records, table_labels)?;
+        let parse_context = ParseContext::new(
+            data,
+            &relocations,
+            pending_toc
+                .iter()
+                .chain(&pending_other_toc)
+                .map(|pending| (pending.label.as_str(), pending.root_address)),
+        );
         parse_tables(
             &mut pending_toc,
             &mut pending_other_toc,

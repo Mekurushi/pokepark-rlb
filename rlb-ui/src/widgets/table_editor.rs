@@ -93,6 +93,10 @@ fn edit_cell(
             let response = ui.add(widget);
             response.changed().then(|| Value::Integer(v))
         }
+        Value::Float(mut v) => {
+            let response = ui.add(egui::DragValue::new(&mut v));
+            response.changed().then(|| Value::Float(v))
+        }
         Value::Boolean(mut b) => {
             let response = ui.checkbox(&mut b, "");
             response.changed().then(|| Value::Boolean(b))
@@ -117,6 +121,7 @@ fn edit_cell(
 fn field_hint(field: &FieldDescriptor) -> String {
     let kind = match field.kind {
         FieldKind::Integer => "integer",
+        FieldKind::Float => "float",
         FieldKind::String => "string",
         FieldKind::Boolean => "boolean",
     };

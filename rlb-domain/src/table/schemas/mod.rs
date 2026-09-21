@@ -1,3 +1,8 @@
+pub(crate) mod disposition_data_header;
 pub(crate) mod fsb_file_list;
+pub(crate) mod item_disposition_data;
+pub(crate) mod item_kind_total_num_data;
+pub(crate) mod player_disposition_data;
+pub(crate) mod pokemon_disposition_data;
 pub(crate) mod script_list;
 pub(crate) mod wandering_data;
