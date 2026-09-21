@@ -1,6 +1,5 @@
-use crate::TableEntry;
 use crate::entry_schemas::codec::{EntryDeserializer, EntrySerializer};
-use crate::entry_schemas::{FieldConstraint, FieldKind, Terminator};
+use crate::entry_schemas::{FieldConstraint, FieldKind};
 use crate::string_pool::StringPool;
 use crate::util::checked_bool;
 use crate::{FieldDescriptor, Value};
@@ -13,7 +12,7 @@ pub(crate) struct WanderingDataTable {
 }
 
 impl WanderingDataTable {
-    const ENTRY_SIZE: usize = <WanderingDataEntry as TableEntry>::SIZE;
+    const ENTRY_SIZE: usize = WanderingDataEntry::SIZE;
 
     pub(crate) fn parse<R, E>(
         data: &[u8],
@@ -35,16 +34,19 @@ impl WanderingDataTable {
                         context: "parsing WanderingData record",
                     })?;
             let mut de = EntryDeserializer::new(bytes, offset, resolve_string, is_relocated);
+            let candidate = WanderingDataEntry::read(&mut de)?;
+            let is_terminator = candidate.pokemon_unlock_id == Value::Integer(0xFFFF_FFFF)
+                && candidate.pokemon_friendship_id == Value::Integer(0xFFFF_FFFF)
+                && candidate.enabled == Value::Boolean(false);
 
-            if let Some(terminator) = <WanderingDataEntry as Terminator>::recognize(&mut de)? {
+            if is_terminator {
                 return Ok(Self {
                     entries,
-                    terminator,
+                    terminator: candidate,
                 });
             }
 
-            let mut de = EntryDeserializer::new(bytes, offset, resolve_string, is_relocated);
-            entries.push(WanderingDataEntry::read(&mut de)?);
+            entries.push(candidate);
             offset += Self::ENTRY_SIZE;
         }
     }
@@ -59,7 +61,7 @@ impl WanderingDataTable {
         for (index, entry) in self.entries.iter().enumerate() {
             let mut serializer =
                 EntrySerializer::new(base_offset + index * Self::ENTRY_SIZE, strings, relocations);
-            <WanderingDataEntry as TableEntry>::write(entry, &mut serializer)?;
+            entry.write(&mut serializer)?;
             serializer.finish(out, Self::ENTRY_SIZE)?;
         }
 
@@ -68,15 +70,15 @@ impl WanderingDataTable {
             strings,
             relocations,
         );
-        <WanderingDataEntry as Terminator>::write(&self.terminator, &mut serializer)?;
-        serializer.finish(out, <WanderingDataEntry as Terminator>::SIZE)
+        self.terminator.write(&mut serializer)?;
+        serializer.finish(out, Self::ENTRY_SIZE)
     }
 
     pub(crate) fn visit_strings(&self, visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
         for entry in &self.entries {
-            <WanderingDataEntry as TableEntry>::visit_strings(entry, visit)?;
+            entry.visit_strings(visit)?;
         }
-        <WanderingDataEntry as Terminator>::visit_strings(&self.terminator, visit)
+        self.terminator.visit_strings(visit)
     }
 
     pub(crate) fn fields(&self) -> &'static [FieldDescriptor] {
@@ -108,11 +110,11 @@ pub struct WanderingDataEntry {
     pad: [u8; 3],
 }
 
-impl TableEntry for WanderingDataEntry {
-    const SIZE: usize = 0xC;
-    const FIELDS: &'static [FieldDescriptor] = WANDERING_DATA_FIELDS;
+impl WanderingDataEntry {
+    pub(crate) const SIZE: usize = 0xC;
+    pub(crate) const FIELDS: &'static [FieldDescriptor] = WANDERING_DATA_FIELDS;
 
-    fn get(&self, field: &str) -> Option<Value> {
+    pub(crate) fn get(&self, field: &str) -> Option<Value> {
         match field {
             "pokemon_unlock_id" => Some(self.pokemon_unlock_id.clone()),
             "pokemon_friendship_id" => Some(self.pokemon_friendship_id.clone()),
@@ -121,7 +123,7 @@ impl TableEntry for WanderingDataEntry {
         }
     }
 
-    fn set(&mut self, field: &str, value: Value) -> Result<()> {
+    pub(crate) fn set(&mut self, field: &str, value: Value) -> Result<()> {
         match field {
             "pokemon_unlock_id" => self.pokemon_unlock_id = value,
             "pokemon_friendship_id" => self.pokemon_friendship_id = value,
@@ -131,7 +133,7 @@ impl TableEntry for WanderingDataEntry {
         Ok(())
     }
 
-    fn read<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Self>
+    pub(crate) fn read<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Self>
     where
         R: FnMut(u32) -> Result<String>,
         E: FnMut(u32) -> bool,
@@ -143,7 +145,7 @@ impl TableEntry for WanderingDataEntry {
             pad: de.read_pad()?,
         })
     }
-    fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()> {
+    pub(crate) fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()> {
         ser.write_u32(self.pokemon_unlock_id.as_integer()?);
         ser.write_u32(self.pokemon_friendship_id.as_integer()?);
         ser.write_u8(u8::from(self.enabled.as_bool()?));
@@ -151,33 +153,8 @@ impl TableEntry for WanderingDataEntry {
         Ok(())
     }
 
-    fn visit_strings(&self, _visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
+    pub(crate) fn visit_strings(&self, _visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
         Ok(())
-    }
-}
-
-impl Terminator for WanderingDataEntry {
-    const SIZE: usize = <Self as TableEntry>::SIZE;
-
-    fn recognize<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Option<Self>>
-    where
-        R: FnMut(u32) -> Result<String>,
-        E: FnMut(u32) -> bool,
-    {
-        let candidate = <Self as TableEntry>::read(de)?;
-        let is_terminator = candidate.pokemon_unlock_id == Value::Integer(0xFFFF_FFFF)
-            && candidate.pokemon_friendship_id == Value::Integer(0xFFFF_FFFF)
-            && candidate.enabled == Value::Boolean(false);
-
-        Ok(is_terminator.then_some(candidate))
-    }
-
-    fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()> {
-        <Self as TableEntry>::write(self, ser)
-    }
-
-    fn visit_strings(&self, visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
-        <Self as TableEntry>::visit_strings(self, visit)
     }
 }
 

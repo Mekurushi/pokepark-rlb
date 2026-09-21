@@ -1,6 +1,5 @@
-use crate::TableEntry;
 use crate::entry_schemas::codec::{EntryDeserializer, EntrySerializer};
-use crate::entry_schemas::{FieldConstraint, FieldKind, Terminator};
+use crate::entry_schemas::{FieldConstraint, FieldKind};
 use crate::string_pool::StringPool;
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
@@ -12,7 +11,7 @@ pub(crate) struct FsbFileListTable {
 }
 
 impl FsbFileListTable {
-    const ENTRY_SIZE: usize = <FsbFileListData as TableEntry>::SIZE;
+    const ENTRY_SIZE: usize = FsbFileListData::SIZE;
 
     pub(crate) fn parse<R, E>(
         data: &[u8],
@@ -34,16 +33,16 @@ impl FsbFileListTable {
                         context: "parsing FsbFileList record",
                     })?;
             let mut de = EntryDeserializer::new(bytes, offset, resolve_string, is_relocated);
+            let candidate = FsbFileListData::read(&mut de)?;
 
-            if let Some(terminator) = <FsbFileListData as Terminator>::recognize(&mut de)? {
+            if candidate.script_name == Value::String(None) {
                 return Ok(Self {
                     entries,
-                    terminator,
+                    terminator: candidate,
                 });
             }
 
-            let mut de = EntryDeserializer::new(bytes, offset, resolve_string, is_relocated);
-            entries.push(FsbFileListData::read(&mut de)?);
+            entries.push(candidate);
             offset += Self::ENTRY_SIZE;
         }
     }
@@ -58,7 +57,7 @@ impl FsbFileListTable {
         for (index, entry) in self.entries.iter().enumerate() {
             let mut serializer =
                 EntrySerializer::new(base_offset + index * Self::ENTRY_SIZE, strings, relocations);
-            <FsbFileListData as TableEntry>::write(entry, &mut serializer)?;
+            entry.write(&mut serializer)?;
             serializer.finish(out, Self::ENTRY_SIZE)?;
         }
 
@@ -67,15 +66,15 @@ impl FsbFileListTable {
             strings,
             relocations,
         );
-        <FsbFileListData as Terminator>::write(&self.terminator, &mut serializer)?;
-        serializer.finish(out, <FsbFileListData as Terminator>::SIZE)
+        self.terminator.write(&mut serializer)?;
+        serializer.finish(out, Self::ENTRY_SIZE)
     }
 
     pub(crate) fn visit_strings(&self, visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
         for entry in &self.entries {
-            <FsbFileListData as TableEntry>::visit_strings(entry, visit)?;
+            entry.visit_strings(visit)?;
         }
-        <FsbFileListData as Terminator>::visit_strings(&self.terminator, visit)
+        self.terminator.visit_strings(visit)
     }
 
     pub(crate) fn fields(&self) -> &'static [FieldDescriptor] {
@@ -104,17 +103,18 @@ pub struct FsbFileListData {
     pub script_name: Value,
 }
 
-impl TableEntry for FsbFileListData {
-    const SIZE: usize = 0x4;
-    const FIELDS: &'static [FieldDescriptor] = FSB_FILE_LIST_FIELDS;
-    fn get(&self, field: &str) -> Option<Value> {
+impl FsbFileListData {
+    pub(crate) const SIZE: usize = 0x4;
+    pub(crate) const FIELDS: &'static [FieldDescriptor] = FSB_FILE_LIST_FIELDS;
+
+    pub(crate) fn get(&self, field: &str) -> Option<Value> {
         match field {
             "script_name" => Some(self.script_name.clone()),
             _ => None,
         }
     }
 
-    fn set(&mut self, field: &str, value: Value) -> Result<()> {
+    pub(crate) fn set(&mut self, field: &str, value: Value) -> Result<()> {
         match field {
             "script_name" => {
                 self.script_name = value;
@@ -124,7 +124,7 @@ impl TableEntry for FsbFileListData {
         Ok(())
     }
 
-    fn read<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Self>
+    pub(crate) fn read<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Self>
     where
         R: FnMut(u32) -> Result<String>,
         E: FnMut(u32) -> bool,
@@ -135,39 +135,16 @@ impl TableEntry for FsbFileListData {
             script_name: script,
         })
     }
-    fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()> {
+    pub(crate) fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()> {
         ser.write_string_pointer(&self.script_name)?;
         Ok(())
     }
 
-    fn visit_strings(&self, visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
+    pub(crate) fn visit_strings(&self, visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
         if let Value::String(Some(value)) = &self.script_name {
             visit(value)?;
         }
         Ok(())
-    }
-}
-
-impl Terminator for FsbFileListData {
-    const SIZE: usize = <Self as TableEntry>::SIZE;
-
-    fn recognize<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Option<Self>>
-    where
-        R: FnMut(u32) -> Result<String>,
-        E: FnMut(u32) -> bool,
-    {
-        let candidate = <Self as TableEntry>::read(de)?;
-        let is_terminator = candidate.script_name == Value::String(None);
-
-        Ok(is_terminator.then_some(candidate))
-    }
-
-    fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()> {
-        <Self as TableEntry>::write(self, ser)
-    }
-
-    fn visit_strings(&self, visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
-        <Self as TableEntry>::visit_strings(self, visit)
     }
 }
 

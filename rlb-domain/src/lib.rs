@@ -7,6 +7,6 @@ mod table_collection;
 mod util;
 mod value;
 
-pub use entry_schemas::{FieldConstraint, FieldDescriptor, FieldKind, TableEntry};
+pub use entry_schemas::{FieldConstraint, FieldDescriptor, FieldKind};
 pub use rlb_file::{RLBFile, TableId, TableView};
 pub use value::Value;

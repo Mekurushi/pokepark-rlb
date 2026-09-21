@@ -130,8 +130,8 @@ impl RLBFile {
                 Ok(TableView {
                     id: slot.table,
                     label: &slot.label,
-                    fields: table.kind.field_descriptors(),
-                    entry_count: table.kind.entry_count(),
+                    fields: table.field_descriptors(),
+                    entry_count: table.entry_count(),
                 })
             })
             .collect()
@@ -140,7 +140,6 @@ impl RLBFile {
     pub fn get_field(&self, table_id: TableId, entry_index: usize, field: &str) -> Option<Value> {
         self.table_collection
             .get(table_id)?
-            .kind
             .get_field(entry_index, field)
     }
     pub fn set_field(
@@ -156,7 +155,7 @@ impl RLBFile {
             .get_mut(table_id)
             .ok_or_else(|| Error::Validation(format!("unknown TableId {table_id:?}")))?;
 
-        table.kind.set_field(entry_index, field, value)
+        table.set_field(entry_index, field, value)
     }
 }
 

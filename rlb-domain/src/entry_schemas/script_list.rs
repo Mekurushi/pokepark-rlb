@@ -1,6 +1,5 @@
-use crate::TableEntry;
 use crate::entry_schemas::codec::{EntryDeserializer, EntrySerializer};
-use crate::entry_schemas::{FieldConstraint, FieldKind, Terminator};
+use crate::entry_schemas::{FieldConstraint, FieldKind};
 use crate::string_pool::StringPool;
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
@@ -12,7 +11,7 @@ pub(crate) struct ScriptListTable {
 }
 
 impl ScriptListTable {
-    const ENTRY_SIZE: usize = <ScriptListEntry as TableEntry>::SIZE;
+    const ENTRY_SIZE: usize = ScriptListEntry::SIZE;
 
     pub(crate) fn parse<R, E>(
         data: &[u8],
@@ -34,16 +33,21 @@ impl ScriptListTable {
                         context: "parsing ScriptList record",
                     })?;
             let mut de = EntryDeserializer::new(bytes, offset, resolve_string, is_relocated);
+            let candidate = ScriptListEntry::read(&mut de)?;
+            let is_terminator = candidate.name == Value::String(None)
+                && candidate.object_id == Value::Integer(0)
+                && candidate.minimum_chapter == Value::Integer(0)
+                && candidate.medium_chapter == Value::Integer(0)
+                && candidate.maximum_chapter == Value::Integer(0);
 
-            if let Some(terminator) = <ScriptListEntry as Terminator>::recognize(&mut de)? {
+            if is_terminator {
                 return Ok(Self {
                     entries,
-                    terminator,
+                    terminator: candidate,
                 });
             }
 
-            let mut de = EntryDeserializer::new(bytes, offset, resolve_string, is_relocated);
-            entries.push(ScriptListEntry::read(&mut de)?);
+            entries.push(candidate);
             offset += Self::ENTRY_SIZE;
         }
     }
@@ -58,7 +62,7 @@ impl ScriptListTable {
         for (index, entry) in self.entries.iter().enumerate() {
             let mut serializer =
                 EntrySerializer::new(base_offset + index * Self::ENTRY_SIZE, strings, relocations);
-            <ScriptListEntry as TableEntry>::write(entry, &mut serializer)?;
+            entry.write(&mut serializer)?;
             serializer.finish(out, Self::ENTRY_SIZE)?;
         }
 
@@ -67,15 +71,15 @@ impl ScriptListTable {
             strings,
             relocations,
         );
-        <ScriptListEntry as Terminator>::write(&self.terminator, &mut serializer)?;
-        serializer.finish(out, <ScriptListEntry as Terminator>::SIZE)
+        self.terminator.write(&mut serializer)?;
+        serializer.finish(out, Self::ENTRY_SIZE)
     }
 
     pub(crate) fn visit_strings(&self, visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
         for entry in &self.entries {
-            <ScriptListEntry as TableEntry>::visit_strings(entry, visit)?;
+            entry.visit_strings(visit)?;
         }
-        <ScriptListEntry as Terminator>::visit_strings(&self.terminator, visit)
+        self.terminator.visit_strings(visit)
     }
 
     pub(crate) fn fields(&self) -> &'static [FieldDescriptor] {
@@ -121,11 +125,11 @@ pub struct ScriptListEntry {
     pub flagname2: Value,
 }
 
-impl TableEntry for ScriptListEntry {
-    const SIZE: usize = 0x44;
-    const FIELDS: &'static [FieldDescriptor] = SCRIPT_LIST_FIELDS;
+impl ScriptListEntry {
+    pub(crate) const SIZE: usize = 0x44;
+    pub(crate) const FIELDS: &'static [FieldDescriptor] = SCRIPT_LIST_FIELDS;
 
-    fn get(&self, field: &str) -> Option<Value> {
+    pub(crate) fn get(&self, field: &str) -> Option<Value> {
         match field {
             "name" => Some(self.name.clone()),
             "object_id" => Some(self.object_id.clone()),
@@ -147,7 +151,7 @@ impl TableEntry for ScriptListEntry {
             _ => None,
         }
     }
-    fn set(&mut self, field: &str, value: Value) -> rlb_error::Result<()> {
+    pub(crate) fn set(&mut self, field: &str, value: Value) -> Result<()> {
         match field {
             "name" => self.name = value,
             "object_id" => self.object_id = value,
@@ -172,7 +176,7 @@ impl TableEntry for ScriptListEntry {
         Ok(())
     }
 
-    fn read<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Self>
+    pub(crate) fn read<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Self>
     where
         R: FnMut(u32) -> Result<String>,
         E: FnMut(u32) -> bool,
@@ -198,7 +202,7 @@ impl TableEntry for ScriptListEntry {
             flagname2: de.read_string_pointer()?,
         })
     }
-    fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()> {
+    pub(crate) fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()> {
         ser.write_string_pointer(&self.name)?;
         ser.write_u32(self.object_id.as_integer()?);
         ser.write_u32(self.minimum_chapter.as_integer()?);
@@ -221,7 +225,7 @@ impl TableEntry for ScriptListEntry {
         Ok(())
     }
 
-    fn visit_strings(&self, visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
+    pub(crate) fn visit_strings(&self, visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
         for value in [
             &self.name,
             &self.flagname,
@@ -235,33 +239,6 @@ impl TableEntry for ScriptListEntry {
             }
         }
         Ok(())
-    }
-}
-
-impl Terminator for ScriptListEntry {
-    const SIZE: usize = <Self as TableEntry>::SIZE;
-
-    fn recognize<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Option<Self>>
-    where
-        R: FnMut(u32) -> Result<String>,
-        E: FnMut(u32) -> bool,
-    {
-        let candidate = <Self as TableEntry>::read(de)?;
-        let is_terminator = candidate.name == Value::String(None)
-            && candidate.object_id == Value::Integer(0)
-            && candidate.minimum_chapter == Value::Integer(0)
-            && candidate.medium_chapter == Value::Integer(0)
-            && candidate.maximum_chapter == Value::Integer(0);
-
-        Ok(is_terminator.then_some(candidate))
-    }
-
-    fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()> {
-        <Self as TableEntry>::write(self, ser)
-    }
-
-    fn visit_strings(&self, visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
-        <Self as TableEntry>::visit_strings(self, visit)
     }
 }
 

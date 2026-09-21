@@ -6,7 +6,7 @@ use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
 
 #[derive(Debug, Clone)]
-pub enum TableKind {
+pub(crate) enum TableKind {
     ScriptList(ScriptListTable),
     FsbFileList(FsbFileListTable),
     WanderingData(WanderingDataTable),
@@ -14,7 +14,7 @@ pub enum TableKind {
 }
 
 impl TableKind {
-    pub fn parse<R, E>(
+    pub(crate) fn parse<R, E>(
         name: &str,
         data: &[u8],
         offset: usize,
@@ -55,7 +55,7 @@ impl TableKind {
         }
     }
 
-    pub fn serialize(
+    pub(crate) fn serialize(
         &self,
         out: &mut Vec<u8>,
         base_offset: usize,
@@ -70,7 +70,7 @@ impl TableKind {
         }
     }
 
-    pub fn visit_strings(&self, visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
+    pub(crate) fn visit_strings(&self, visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
         match self {
             Self::ScriptList(table) => table.visit_strings(visit),
             Self::FsbFileList(table) => table.visit_strings(visit),
