@@ -45,32 +45,24 @@ impl RLBFile {
         let other_records = raw.other_records();
         let table_labels = raw.table_labels();
 
-        let mut toc: Vec<TocSlot> = Vec::with_capacity(records.len());
-        let mut other_toc: Vec<TocSlot> = Vec::with_capacity(other_records.len());
         let mut string_pool: StringPool<StringId> = StringPool::new();
         let mut table_collection: TableCollection = TableCollection::new();
         let mut label_pool: StringPool<LabelId> = StringPool::new();
         let relocations = RelocationTable::from_raw(relocation_table);
-        build_records(
-            records,
+
+        let mut pending_toc = build_pending_tables(records, table_labels, &mut label_pool)?;
+        let mut pending_other_toc =
+            build_pending_tables(other_records, table_labels, &mut label_pool)?;
+        parse_tables(
+            &mut pending_toc,
+            &mut pending_other_toc,
             data,
-            table_labels,
             &mut string_pool,
             &mut table_collection,
-            &mut label_pool,
-            &mut toc,
             &relocations,
         )?;
-        build_records(
-            other_records,
-            data,
-            table_labels,
-            &mut string_pool,
-            &mut table_collection,
-            &mut label_pool,
-            &mut other_toc,
-            &relocations,
-        )?;
+        let toc = finish_toc(pending_toc)?;
+        let other_toc = finish_toc(pending_other_toc)?;
 
         Ok(Self {
             string_pool,
@@ -211,22 +203,50 @@ impl RLBFile {
     }
 }
 
-// TODO: temporary solution until better way to handle building is known
-fn build_records(
+#[derive(Debug)]
+struct PendingTable {
+    label: String,
+    label_id: LabelId,
+    root_address: usize,
+    parsed_table: Option<TableId>,
+}
+
+fn build_pending_tables(
     records: &[TableRecord],
-    data: &[u8],
     table_labels: &[u8],
+    labels: &mut StringPool<LabelId>,
+) -> Result<Vec<PendingTable>> {
+    let mut pending = Vec::with_capacity(records.len());
+
+    for record in records {
+        let label = resolve_string_from_raw_data(table_labels, record.label_offset as usize)?;
+        let label_id = labels.intern(label.clone());
+        pending.push(PendingTable {
+            label,
+            label_id,
+            root_address: record.address as usize,
+            parsed_table: None,
+        });
+    }
+
+    Ok(pending)
+}
+
+fn parse_tables(
+    pending_toc: &mut [PendingTable],
+    pending_other_toc: &mut [PendingTable],
+    data: &[u8],
     strings: &mut StringPool<StringId>,
     tables: &mut TableCollection,
-    labels: &mut StringPool<LabelId>,
-    tocs: &mut Vec<TocSlot>,
     relocations: &RelocationTable,
 ) -> Result<()> {
-    //TODO: performant/clean sort by address
-    let mut sorted = records.to_owned();
-    sorted.sort_by_key(|record| record.address);
-    for record in sorted {
-        let name = resolve_string_from_raw_data(table_labels, record.label_offset as usize)?;
+    let mut parse_order: Vec<&mut PendingTable> = pending_toc
+        .iter_mut()
+        .chain(pending_other_toc.iter_mut())
+        .collect();
+    parse_order.sort_by_key(|pending| pending.root_address);
+
+    for pending in parse_order {
         let mut resolve_string = |offset: u32| -> Result<StringId> {
             let s = resolve_string_from_raw_data(data, offset as usize)?;
             Ok(strings.intern(s))
@@ -234,20 +254,28 @@ fn build_records(
         let mut is_relocated = |offset: u32| -> bool { relocations.is_relocated(offset) };
 
         let table = Table::resolve(
-            &name,
+            &pending.label,
             data,
-            record.address as usize,
+            pending.root_address,
             &mut resolve_string,
             &mut is_relocated,
         )?;
-
-        let table_id = tables.insert(table);
-        let label_id = labels.intern(name);
-
-        tocs.push(TocSlot {
-            table: table_id,
-            label: label_id,
-        });
+        pending.parsed_table = Some(tables.insert(table));
     }
+
     Ok(())
+}
+
+fn finish_toc(pending: Vec<PendingTable>) -> Result<Vec<TocSlot>> {
+    pending
+        .into_iter()
+        .map(|pending| {
+            Ok(TocSlot {
+                table: pending.parsed_table.ok_or_else(|| {
+                    Error::Validation(format!("table {:?} was not parsed", pending.label))
+                })?,
+                label: pending.label_id,
+            })
+        })
+        .collect()
 }
