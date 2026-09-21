@@ -1,6 +1,5 @@
 use crate::entry_schemas::{EntryDeserializer, EntrySerializer, TableEntry, Terminator};
-use crate::rlb_file::StringId;
-use crate::string_pool::SerializedStringPoolContext;
+use crate::string_pool::StringPool;
 use crate::table::body::TableBody;
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
@@ -23,7 +22,7 @@ where
         is_relocated: &mut E,
     ) -> Result<Self>
     where
-        R: FnMut(u32) -> Result<StringId>,
+        R: FnMut(u32) -> Result<String>,
         E: FnMut(u32) -> bool,
     {
         let mut entries = Vec::new();
@@ -56,7 +55,7 @@ where
         &self,
         out: &mut Vec<u8>,
         base_offset: usize,
-        strings: &SerializedStringPoolContext<StringId>,
+        strings: &StringPool,
         relocations: &mut Vec<u32>,
     ) -> Result<()> {
         for (i, entry) in self.entries.iter().enumerate() {
@@ -72,6 +71,13 @@ where
         ser.finish(out, Term::SIZE)?;
 
         Ok(())
+    }
+
+    fn visit_strings(&self, visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
+        for entry in &self.entries {
+            entry.visit_strings(visit)?;
+        }
+        self.terminator.visit_strings(visit)
     }
 
     fn fields(&self) -> &'static [FieldDescriptor] {

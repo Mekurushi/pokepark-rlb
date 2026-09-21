@@ -1,5 +1,5 @@
-use crate::rlb_file::{StringId, TableId};
-use crate::string_pool::SerializedStringPoolContext;
+use crate::rlb_file::TableId;
+use crate::string_pool::StringPool;
 use crate::table::Table;
 use rlb_error::Result;
 use slotmap::SlotMap;
@@ -42,10 +42,14 @@ impl TableCollection {
         self.map.insert(table)
     }
 
-    pub fn serialize(
-        &self,
-        strings: &SerializedStringPoolContext<StringId>,
-    ) -> Result<SerializedTableContext> {
+    pub(crate) fn collect_strings(&self, strings: &mut StringPool) -> Result<()> {
+        for (_, table) in &self.map {
+            table.visit_strings(&mut |value| strings.intern(value).map(|_| ()))?;
+        }
+        Ok(())
+    }
+
+    pub fn serialize(&self, strings: &StringPool) -> Result<SerializedTableContext> {
         let mut data: Vec<u8> = Vec::new();
         let mut id_to_offset: HashMap<TableId, usize> = HashMap::with_capacity(self.map.len());
         let mut relocation_offsets: Vec<u32> = Vec::new();

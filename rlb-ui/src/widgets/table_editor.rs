@@ -1,7 +1,7 @@
 use crate::state::{AppState, LoadedFile};
 use eframe::egui;
 use egui_extras::{Column, TableBuilder};
-use rlb_domain::{FieldConstraint, FieldDescriptor, FieldKind, RLBFile, ResolvedValue, TableId};
+use rlb_domain::{FieldConstraint, FieldDescriptor, FieldKind, RLBFile, TableId, Value};
 use rlb_error::Result;
 
 pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
@@ -81,7 +81,7 @@ fn edit_cell(
     };
 
     let changed = match value {
-        ResolvedValue::Integer(mut v) => {
+        Value::Integer(mut v) => {
             let mut widget = egui::DragValue::new(&mut v)
                 .speed(0)
                 .hexadecimal(1, true, true)
@@ -92,18 +92,18 @@ fn edit_cell(
             }
 
             let response = ui.add(widget);
-            response.changed().then(|| ResolvedValue::Integer(v))
+            response.changed().then(|| Value::Integer(v))
         }
-        ResolvedValue::Boolean(mut b) => {
+        Value::Boolean(mut b) => {
             let response = ui.checkbox(&mut b, "");
-            response.changed().then(|| ResolvedValue::Boolean(b))
+            response.changed().then(|| Value::Boolean(b))
         }
-        ResolvedValue::String(s) => {
+        Value::String(s) => {
             let mut text = s.unwrap_or_default();
             let response = ui.text_edit_singleline(&mut text);
             response
                 .changed()
-                .then(|| ResolvedValue::String(if text.is_empty() { None } else { Some(text) }))
+                .then(|| Value::String(if text.is_empty() { None } else { Some(text) }))
         }
     };
 

@@ -1,11 +1,10 @@
 use crate::TableEntry;
 use crate::entry_schemas::codec::{EntryDeserializer, EntrySerializer};
 use crate::entry_schemas::{FieldConstraint, FieldKind, Terminator};
-use crate::rlb_file::StringId;
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct FsbFileListData {
     pub script_name: Value,
 }
@@ -15,7 +14,7 @@ impl TableEntry for FsbFileListData {
     const FIELDS: &'static [FieldDescriptor] = FSB_FILE_LIST_FIELDS;
     fn get(&self, field: &str) -> Option<Value> {
         match field {
-            "script_name" => Some(self.script_name),
+            "script_name" => Some(self.script_name.clone()),
             _ => None,
         }
     }
@@ -32,7 +31,7 @@ impl TableEntry for FsbFileListData {
 
     fn read<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Self>
     where
-        R: FnMut(u32) -> Result<StringId>,
+        R: FnMut(u32) -> Result<String>,
         E: FnMut(u32) -> bool,
     {
         let script = de.read_string_pointer()?;
@@ -42,7 +41,14 @@ impl TableEntry for FsbFileListData {
         })
     }
     fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()> {
-        ser.write_string_pointer(self.script_name)?;
+        ser.write_string_pointer(&self.script_name)?;
+        Ok(())
+    }
+
+    fn visit_strings(&self, visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
+        if let Value::String(Some(value)) = &self.script_name {
+            visit(value)?;
+        }
         Ok(())
     }
 }
@@ -52,7 +58,7 @@ impl Terminator for FsbFileListData {
 
     fn recognize<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Option<Self>>
     where
-        R: FnMut(u32) -> Result<StringId>,
+        R: FnMut(u32) -> Result<String>,
         E: FnMut(u32) -> bool,
     {
         let candidate = <Self as TableEntry>::read(de)?;
@@ -63,6 +69,10 @@ impl Terminator for FsbFileListData {
 
     fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()> {
         <Self as TableEntry>::write(self, ser)
+    }
+
+    fn visit_strings(&self, visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
+        <Self as TableEntry>::visit_strings(self, visit)
     }
 }
 

@@ -1,12 +1,11 @@
 use crate::TableEntry;
 use crate::entry_schemas::codec::{EntryDeserializer, EntrySerializer};
 use crate::entry_schemas::{FieldConstraint, FieldKind, Terminator};
-use crate::rlb_file::StringId;
 use crate::util::checked_bool;
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct WanderingDataTable {
     pokemon_unlock_id: Value,
     pokemon_friendship_id: Value,
@@ -20,9 +19,9 @@ impl TableEntry for WanderingDataTable {
 
     fn get(&self, field: &str) -> Option<Value> {
         match field {
-            "pokemon_unlock_id" => Some(self.pokemon_unlock_id),
-            "pokemon_friendship_id" => Some(self.pokemon_friendship_id),
-            "enabled" => Some(self.enabled),
+            "pokemon_unlock_id" => Some(self.pokemon_unlock_id.clone()),
+            "pokemon_friendship_id" => Some(self.pokemon_friendship_id.clone()),
+            "enabled" => Some(self.enabled.clone()),
             _ => None,
         }
     }
@@ -39,7 +38,7 @@ impl TableEntry for WanderingDataTable {
 
     fn read<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Self>
     where
-        R: FnMut(u32) -> Result<StringId>,
+        R: FnMut(u32) -> Result<String>,
         E: FnMut(u32) -> bool,
     {
         Ok(Self {
@@ -56,6 +55,10 @@ impl TableEntry for WanderingDataTable {
         ser.write_pad(&self.pad);
         Ok(())
     }
+
+    fn visit_strings(&self, _visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
+        Ok(())
+    }
 }
 
 impl Terminator for WanderingDataTable {
@@ -63,7 +66,7 @@ impl Terminator for WanderingDataTable {
 
     fn recognize<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Option<Self>>
     where
-        R: FnMut(u32) -> Result<StringId>,
+        R: FnMut(u32) -> Result<String>,
         E: FnMut(u32) -> bool,
     {
         let candidate = <Self as TableEntry>::read(de)?;
@@ -76,6 +79,10 @@ impl Terminator for WanderingDataTable {
 
     fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()> {
         <Self as TableEntry>::write(self, ser)
+    }
+
+    fn visit_strings(&self, visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
+        <Self as TableEntry>::visit_strings(self, visit)
     }
 }
 

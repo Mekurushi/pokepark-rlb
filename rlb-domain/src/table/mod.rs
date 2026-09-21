@@ -2,8 +2,7 @@ pub mod body;
 pub mod registry;
 pub mod terminated_list;
 
-use crate::rlb_file::StringId;
-use crate::string_pool::SerializedStringPoolContext;
+use crate::string_pool::StringPool;
 use crate::table::registry::TableKind;
 use rlb_error::Result;
 
@@ -21,7 +20,7 @@ impl Table {
         is_relocated: &mut E,
     ) -> Result<Self>
     where
-        R: FnMut(u32) -> Result<StringId>,
+        R: FnMut(u32) -> Result<String>,
         E: FnMut(u32) -> bool,
     {
         Ok(Self {
@@ -33,9 +32,13 @@ impl Table {
         &self,
         out: &mut Vec<u8>,
         base_offset: usize,
-        strings: &SerializedStringPoolContext<StringId>,
+        strings: &StringPool,
         relocations: &mut Vec<u32>,
     ) -> Result<()> {
         self.kind.serialize(out, base_offset, strings, relocations)
+    }
+
+    pub(crate) fn visit_strings(&self, visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
+        self.kind.visit_strings(visit)
     }
 }

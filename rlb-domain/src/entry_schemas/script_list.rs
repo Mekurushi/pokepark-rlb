@@ -1,11 +1,10 @@
 use crate::TableEntry;
 use crate::entry_schemas::codec::{EntryDeserializer, EntrySerializer};
 use crate::entry_schemas::{FieldConstraint, FieldKind, Terminator};
-use crate::rlb_file::StringId;
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct ScriptListEntry {
     pub name: Value,
     pub object_id: Value,
@@ -33,23 +32,23 @@ impl TableEntry for ScriptListEntry {
 
     fn get(&self, field: &str) -> Option<Value> {
         match field {
-            "name" => Some(self.name),
-            "object_id" => Some(self.object_id),
-            "minimum_chapter" => Some(self.minimum_chapter),
-            "medium_chapter" => Some(self.medium_chapter),
-            "maximum_chapter" => Some(self.maximum_chapter),
-            "flagname" => Some(self.flagname),
-            "flag_value_condition" => Some(self.flag_value_condition),
-            "target_script" => Some(self.target_script),
-            "unknown" => Some(self.unknown),
-            "entrypoint" => Some(self.entrypoint),
-            "zone_id" => Some(self.zone_id),
-            "area_id" => Some(self.area_id),
-            "position_id" => Some(self.position_id),
-            "pad_0x34" => Some(self.pad_0x34),
-            "after_script_entrypoint" => Some(self.after_script_entrypoint),
-            "animation" => Some(self.animation),
-            "flagname2" => Some(self.flagname2),
+            "name" => Some(self.name.clone()),
+            "object_id" => Some(self.object_id.clone()),
+            "minimum_chapter" => Some(self.minimum_chapter.clone()),
+            "medium_chapter" => Some(self.medium_chapter.clone()),
+            "maximum_chapter" => Some(self.maximum_chapter.clone()),
+            "flagname" => Some(self.flagname.clone()),
+            "flag_value_condition" => Some(self.flag_value_condition.clone()),
+            "target_script" => Some(self.target_script.clone()),
+            "unknown" => Some(self.unknown.clone()),
+            "entrypoint" => Some(self.entrypoint.clone()),
+            "zone_id" => Some(self.zone_id.clone()),
+            "area_id" => Some(self.area_id.clone()),
+            "position_id" => Some(self.position_id.clone()),
+            "pad_0x34" => Some(self.pad_0x34.clone()),
+            "after_script_entrypoint" => Some(self.after_script_entrypoint.clone()),
+            "animation" => Some(self.animation.clone()),
+            "flagname2" => Some(self.flagname2.clone()),
             _ => None,
         }
     }
@@ -80,7 +79,7 @@ impl TableEntry for ScriptListEntry {
 
     fn read<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Self>
     where
-        R: FnMut(u32) -> Result<StringId>,
+        R: FnMut(u32) -> Result<String>,
         E: FnMut(u32) -> bool,
     {
         Ok(Self {
@@ -105,25 +104,41 @@ impl TableEntry for ScriptListEntry {
         })
     }
     fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()> {
-        ser.write_string_pointer(self.name)?;
+        ser.write_string_pointer(&self.name)?;
         ser.write_u32(self.object_id.as_integer()?);
         ser.write_u32(self.minimum_chapter.as_integer()?);
         ser.write_u32(self.medium_chapter.as_integer()?);
         ser.write_u32(self.maximum_chapter.as_integer()?);
-        ser.write_string_pointer(self.flagname)?;
+        ser.write_string_pointer(&self.flagname)?;
         ser.write_u32(self.flag_value_condition.as_integer()?);
         ser.write_u8(self.target_script.as_integer()? as u8); // TODO: width based checks
         ser.write_pad(&self.pad_0x1d);
         ser.write_u32(self.unknown.as_integer()?);
-        ser.write_string_pointer(self.entrypoint)?;
+        ser.write_string_pointer(&self.entrypoint)?;
         ser.write_u32(self.zone_id.as_integer()?);
         ser.write_u32(self.area_id.as_integer()?);
         ser.write_u32(self.position_id.as_integer()?);
         ser.write_u32(self.pad_0x34.as_integer()?);
-        ser.write_string_pointer(self.after_script_entrypoint)?;
-        ser.write_string_pointer(self.animation)?;
-        ser.write_string_pointer(self.flagname2)?;
+        ser.write_string_pointer(&self.after_script_entrypoint)?;
+        ser.write_string_pointer(&self.animation)?;
+        ser.write_string_pointer(&self.flagname2)?;
 
+        Ok(())
+    }
+
+    fn visit_strings(&self, visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
+        for value in [
+            &self.name,
+            &self.flagname,
+            &self.entrypoint,
+            &self.after_script_entrypoint,
+            &self.animation,
+            &self.flagname2,
+        ] {
+            if let Value::String(Some(value)) = value {
+                visit(value)?;
+            }
+        }
         Ok(())
     }
 }
@@ -133,7 +148,7 @@ impl Terminator for ScriptListEntry {
 
     fn recognize<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Option<Self>>
     where
-        R: FnMut(u32) -> Result<StringId>,
+        R: FnMut(u32) -> Result<String>,
         E: FnMut(u32) -> bool,
     {
         let candidate = <Self as TableEntry>::read(de)?;
@@ -148,6 +163,10 @@ impl Terminator for ScriptListEntry {
 
     fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()> {
         <Self as TableEntry>::write(self, ser)
+    }
+
+    fn visit_strings(&self, visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
+        <Self as TableEntry>::visit_strings(self, visit)
     }
 }
 

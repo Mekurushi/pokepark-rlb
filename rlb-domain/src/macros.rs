@@ -31,7 +31,7 @@ impl TableKind {
         is_relocated: &mut E,
     ) -> rlb_error::Result<Self>
     where
-        R: FnMut(u32) -> rlb_error::Result<crate::rlb_file::StringId>,
+        R: FnMut(u32) -> rlb_error::Result<String>,
         E: FnMut(u32) -> bool,
     {
         match name {
@@ -58,7 +58,7 @@ impl TableKind {
         &self,
         out: &mut Vec<u8>,
         base_offset: usize,
-        strings: &crate::string_pool::SerializedStringPoolContext<crate::rlb_file::StringId>,
+        strings: &crate::string_pool::StringPool,
         relocations: &mut Vec<u32>,
     ) -> rlb_error::Result<()> {
         match self {
@@ -66,6 +66,18 @@ impl TableKind {
                 Self::$schema(body) => crate::table::body::TableBody::serialize(
                     body, out, base_offset, strings, relocations,
                 ),
+            )*
+            Self::Unknown => Ok(()),
+        }
+    }
+
+    pub fn visit_strings(
+        &self,
+        visit: &mut dyn FnMut(&str) -> rlb_error::Result<()>,
+    ) -> rlb_error::Result<()> {
+        match self {
+            $(
+                Self::$schema(body) => crate::table::body::TableBody::visit_strings(body, visit),
             )*
             Self::Unknown => Ok(()),
         }

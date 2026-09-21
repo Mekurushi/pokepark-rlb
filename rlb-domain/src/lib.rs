@@ -10,4 +10,4 @@ mod value;
 
 pub use entry_schemas::{FieldConstraint, FieldDescriptor, FieldKind, TableEntry};
 pub use rlb_file::{RLBFile, TableId, TableView};
-pub use value::{ResolvedValue, Value};
+pub use value::Value;

@@ -5,7 +5,6 @@ pub mod wandering_data;
 
 use crate::Value;
 pub(crate) use crate::entry_schemas::codec::{EntryDeserializer, EntrySerializer};
-use crate::rlb_file::StringId;
 use rlb_error::Result;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -41,18 +40,22 @@ pub trait TableEntry: Sized + std::fmt::Debug {
 
     fn read<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Self>
     where
-        R: FnMut(u32) -> Result<StringId>,
+        R: FnMut(u32) -> Result<String>,
         E: FnMut(u32) -> bool;
 
     fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()>;
+
+    fn visit_strings(&self, visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()>;
 }
 pub(crate) trait Terminator: Sized + std::fmt::Debug + Clone {
     const SIZE: usize;
 
     fn recognize<R, E>(de: &mut EntryDeserializer<'_, R, E>) -> Result<Option<Self>>
     where
-        R: FnMut(u32) -> Result<StringId>,
+        R: FnMut(u32) -> Result<String>,
         E: FnMut(u32) -> bool;
 
     fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()>;
+
+    fn visit_strings(&self, visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()>;
 }

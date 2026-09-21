@@ -1,6 +1,5 @@
 use crate::Value;
-use crate::rlb_file::StringId;
-use crate::string_pool::SerializedStringPoolContext;
+use crate::string_pool::StringPool;
 use crate::util::checked_u32;
 use rlb_error::{Error, Result};
 
@@ -8,14 +7,14 @@ use rlb_error::{Error, Result};
 pub(crate) struct EntrySerializer<'a> {
     buffer: Vec<u8>,
     base_offset: usize,
-    strings: &'a SerializedStringPoolContext<StringId>,
+    strings: &'a StringPool,
     relocations: &'a mut Vec<u32>,
 }
 
 impl<'a> EntrySerializer<'a> {
     pub(crate) fn new(
         base_offset: usize,
-        strings: &'a SerializedStringPoolContext<StringId>,
+        strings: &'a StringPool,
         relocations: &'a mut Vec<u32>,
     ) -> Self {
         Self {
@@ -42,17 +41,17 @@ impl<'a> EntrySerializer<'a> {
         self.buffer.extend_from_slice(bytes);
     }
 
-    pub(crate) fn write_string_pointer(&mut self, value: Value) -> Result<()> {
+    pub(crate) fn write_string_pointer(&mut self, value: &Value) -> Result<()> {
         match value {
-            Value::String(string_id) => match string_id {
+            Value::String(string) => match string {
                 None => {
                     self.buffer.extend_from_slice(&0u32.to_be_bytes());
                     Ok(())
                 }
-                Some(id) => {
-                    let string_offset = self.strings.offset_of(id).ok_or_else(|| {
+                Some(value) => {
+                    let string_offset = self.strings.offset_of(value).ok_or_else(|| {
                         Error::Validation(format!(
-                            "string ID {string_id:?} not found in serialized string pool"
+                            "string {value:?} not found in serialized string pool"
                         ))
                     })?;
                     self.relocations.push(checked_u32(
@@ -90,7 +89,7 @@ impl<'a> EntrySerializer<'a> {
 
 pub(crate) struct EntryDeserializer<'a, R, E>
 where
-    R: FnMut(u32) -> Result<StringId>,
+    R: FnMut(u32) -> Result<String>,
     E: FnMut(u32) -> bool,
 {
     data: &'a [u8],
@@ -102,7 +101,7 @@ where
 
 impl<'a, R, E> EntryDeserializer<'a, R, E>
 where
-    R: FnMut(u32) -> Result<StringId>,
+    R: FnMut(u32) -> Result<String>,
     E: FnMut(u32) -> bool,
 {
     pub(crate) fn new(
