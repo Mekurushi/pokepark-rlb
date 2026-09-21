@@ -1,7 +1,6 @@
 use crate::relocation::RelocationTable;
 use crate::string_pool::StringPool;
-use crate::table::collection::TableCollection;
-use crate::table::{Table, TableId};
+use crate::table::{Table, TableCollection, TableId};
 use crate::util::{checked_u32, resolve_string_from_raw_data};
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
@@ -63,9 +62,7 @@ impl RLBFile {
     }
 
     fn to_raw(&self) -> Result<RawFile> {
-        let mut strings = StringPool::new();
-        self.table_collection.collect_strings(&mut strings)?;
-        let tables = self.table_collection.serialize(&strings)?;
+        let tables = self.table_collection.serialize()?;
         let mut labels = StringPool::new();
         let mut make_records = |toc: &Vec<TocSlot>| -> Result<Vec<TableRecord>> {
             toc.iter()
@@ -92,15 +89,8 @@ impl RLBFile {
         let records = make_records(&self.toc)?;
         let other_records = make_records(&self.other_toc)?;
 
-        let data = strings
-            .data()
-            .iter()
-            .chain(tables.data())
-            .copied()
-            .collect();
-
         RawFile::new(
-            data,
+            tables.data().to_vec(),
             tables.relocations().clone(),
             records,
             other_records,

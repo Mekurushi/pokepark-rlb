@@ -1,27 +1,19 @@
 use crate::Value;
-use crate::string_pool::StringPool;
+use crate::table::serialization::{RelocatableTable, StringFixup};
 use crate::util::checked_u32;
 use rlb_error::{Error, Result};
 
 #[derive(Debug)]
 pub(crate) struct EntrySerializer<'a> {
     buffer: Vec<u8>,
-    base_offset: usize,
-    strings: &'a StringPool,
-    relocations: &'a mut Vec<u32>,
+    string_fixups: Vec<StringFixup<'a>>,
 }
 
 impl<'a> EntrySerializer<'a> {
-    pub(crate) fn new(
-        base_offset: usize,
-        strings: &'a StringPool,
-        relocations: &'a mut Vec<u32>,
-    ) -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             buffer: Vec::new(),
-            base_offset,
-            strings,
-            relocations,
+            string_fixups: Vec::new(),
         }
     }
 
@@ -41,7 +33,7 @@ impl<'a> EntrySerializer<'a> {
         self.buffer.extend_from_slice(bytes);
     }
 
-    pub(crate) fn write_string_pointer(&mut self, value: &Value) -> Result<()> {
+    pub(crate) fn write_string_pointer(&mut self, value: &'a Value) -> Result<()> {
         match value {
             Value::String(string) => match string {
                 None => {
@@ -49,20 +41,11 @@ impl<'a> EntrySerializer<'a> {
                     Ok(())
                 }
                 Some(value) => {
-                    let string_offset = self.strings.offset_of(value).ok_or_else(|| {
-                        Error::Validation(format!(
-                            "string {value:?} not found in serialized string pool"
-                        ))
-                    })?;
-                    self.relocations.push(checked_u32(
-                        self.base_offset + self.buffer.len(),
-                        "calculating field offset for relocation table",
-                    )?);
-                    self.buffer.extend_from_slice(
-                        &(checked_u32(string_offset, "converting string offset to u32")?)
-                            .to_be_bytes(),
-                    );
-
+                    self.string_fixups.push(StringFixup {
+                        offset: self.buffer.len(),
+                        value,
+                    });
+                    self.buffer.extend_from_slice(&0u32.to_be_bytes());
                     Ok(())
                 }
             },
@@ -75,14 +58,21 @@ impl<'a> EntrySerializer<'a> {
         }
     }
 
-    pub(crate) fn finish(self, out: &mut Vec<u8>, expected: usize) -> Result<()> {
+    pub(crate) fn finish(self, table: &mut RelocatableTable<'a>, expected: usize) -> Result<()> {
         if self.buffer.len() != expected {
             return Err(Error::Validation(format!(
                 "entry serialized {} bytes, expected {expected}",
                 self.buffer.len()
             )));
         }
-        out.extend_from_slice(&self.buffer);
+        let entry_offset = table.data.len();
+        table.data.extend_from_slice(&self.buffer);
+        table
+            .string_fixups
+            .extend(self.string_fixups.into_iter().map(|fixup| StringFixup {
+                offset: entry_offset + fixup.offset,
+                value: fixup.value,
+            }));
         Ok(())
     }
 }

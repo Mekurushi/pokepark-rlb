@@ -1,15 +1,17 @@
 mod codec;
-pub(crate) mod collection;
+mod collection;
 mod field;
 mod schemas;
+mod serialization;
 
 use crate::Value;
-use crate::string_pool::StringPool;
 use crate::table::schemas::fsb_file_list::FsbFileListTable;
 use crate::table::schemas::script_list::ScriptListTable;
 use crate::table::schemas::wandering_data::WanderingDataTable;
+use crate::table::serialization::RelocatableTable;
 use rlb_error::{Error, Result};
 
+pub(crate) use collection::TableCollection;
 pub use field::{FieldConstraint, FieldDescriptor, FieldKind};
 
 slotmap::new_key_type! {
@@ -24,12 +26,12 @@ enum TableKind {
 }
 
 #[derive(Debug, Clone)]
-pub struct Table {
+pub(crate) struct Table {
     kind: TableKind,
 }
 
 impl Table {
-    pub fn parse<R, E>(
+    pub(crate) fn parse<R, E>(
         name: &str,
         data: &[u8],
         offset: usize,
@@ -76,29 +78,11 @@ impl Table {
         Ok(Self { kind })
     }
 
-    pub(crate) fn serialize_into(
-        &self,
-        out: &mut Vec<u8>,
-        base_offset: usize,
-        strings: &StringPool,
-        relocations: &mut Vec<u32>,
-    ) -> Result<()> {
+    pub(crate) fn serialize(&self) -> Result<RelocatableTable<'_>> {
         match &self.kind {
-            TableKind::ScriptList(table) => table.serialize(out, base_offset, strings, relocations),
-            TableKind::FsbFileList(table) => {
-                table.serialize(out, base_offset, strings, relocations)
-            }
-            TableKind::WanderingData(table) => {
-                table.serialize(out, base_offset, strings, relocations)
-            }
-        }
-    }
-
-    pub(crate) fn visit_strings(&self, visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
-        match &self.kind {
-            TableKind::ScriptList(table) => table.visit_strings(visit),
-            TableKind::FsbFileList(table) => table.visit_strings(visit),
-            TableKind::WanderingData(table) => table.visit_strings(visit),
+            TableKind::ScriptList(table) => table.serialize(),
+            TableKind::FsbFileList(table) => table.serialize(),
+            TableKind::WanderingData(table) => table.serialize(),
         }
     }
 

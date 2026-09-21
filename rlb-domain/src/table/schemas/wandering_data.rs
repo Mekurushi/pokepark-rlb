@@ -1,6 +1,6 @@
-use crate::string_pool::StringPool;
 use crate::table::codec::{EntryDeserializer, EntrySerializer};
 use crate::table::field::{FieldConstraint, FieldKind};
+use crate::table::serialization::RelocatableTable;
 use crate::util::checked_bool;
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
@@ -51,34 +51,18 @@ impl WanderingDataTable {
         }
     }
 
-    pub(crate) fn serialize(
-        &self,
-        out: &mut Vec<u8>,
-        base_offset: usize,
-        strings: &StringPool,
-        relocations: &mut Vec<u32>,
-    ) -> Result<()> {
-        for (index, entry) in self.entries.iter().enumerate() {
-            let mut serializer =
-                EntrySerializer::new(base_offset + index * Self::ENTRY_SIZE, strings, relocations);
-            entry.write(&mut serializer)?;
-            serializer.finish(out, Self::ENTRY_SIZE)?;
-        }
-
-        let mut serializer = EntrySerializer::new(
-            base_offset + self.entries.len() * Self::ENTRY_SIZE,
-            strings,
-            relocations,
-        );
-        self.terminator.write(&mut serializer)?;
-        serializer.finish(out, Self::ENTRY_SIZE)
-    }
-
-    pub(crate) fn visit_strings(&self, visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
+    pub(crate) fn serialize(&self) -> Result<RelocatableTable<'_>> {
+        let mut table = RelocatableTable::default();
         for entry in &self.entries {
-            entry.visit_strings(visit)?;
+            let mut serializer = EntrySerializer::new();
+            entry.write(&mut serializer)?;
+            serializer.finish(&mut table, Self::ENTRY_SIZE)?;
         }
-        self.terminator.visit_strings(visit)
+
+        let mut serializer = EntrySerializer::new();
+        self.terminator.write(&mut serializer)?;
+        serializer.finish(&mut table, Self::ENTRY_SIZE)?;
+        Ok(table)
     }
 
     pub(crate) fn fields(&self) -> &'static [FieldDescriptor] {
@@ -145,15 +129,11 @@ impl WanderingDataEntry {
             pad: de.read_pad()?,
         })
     }
-    pub(crate) fn write(&self, ser: &mut EntrySerializer<'_>) -> Result<()> {
+    pub(crate) fn write<'a>(&'a self, ser: &mut EntrySerializer<'a>) -> Result<()> {
         ser.write_u32(self.pokemon_unlock_id.as_integer()?);
         ser.write_u32(self.pokemon_friendship_id.as_integer()?);
         ser.write_u8(u8::from(self.enabled.as_bool()?));
         ser.write_pad(&self.pad);
-        Ok(())
-    }
-
-    pub(crate) fn visit_strings(&self, _visit: &mut dyn FnMut(&str) -> Result<()>) -> Result<()> {
         Ok(())
     }
 }
