@@ -5,8 +5,8 @@ use rlb_error::Result;
 
 pub const HEADER_SIZE: u32 = 0x20;
 
-pub const RELOCATION_ENTRY_SIZE: u32 = 4;
-pub const ENTRY_SLOT_SIZE: u32 = 8;
+const RELOCATION_ENTRY_SIZE: u32 = 4;
+const ENTRY_SLOT_SIZE: u32 = 8;
 
 #[derive(Debug, Clone, PartialEq, Eq, BinRead, BinWrite)]
 #[brw(big)]

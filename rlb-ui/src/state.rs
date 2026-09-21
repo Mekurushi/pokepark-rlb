@@ -1,27 +1,27 @@
 use rlb_domain::{RLBFile, TableId};
 use std::path::PathBuf;
 
-pub struct LoadedFile {
+pub(crate) struct LoadedFile {
     pub file: RLBFile,
     pub path: PathBuf,
     pub selected_table: Option<TableId>,
     pub dirty: bool,
 }
 
-pub struct Status {
+pub(crate) struct Status {
     pub message: String,
     pub is_error: bool,
 }
 
 impl Status {
-    pub fn info(message: impl Into<String>) -> Self {
+    pub(crate) fn info(message: impl Into<String>) -> Self {
         Self {
             message: message.into(),
             is_error: false,
         }
     }
 
-    pub fn error(message: impl Into<String>) -> Self {
+    pub(crate) fn error(message: impl Into<String>) -> Self {
         Self {
             message: message.into(),
             is_error: true,
@@ -29,13 +29,13 @@ impl Status {
     }
 }
 
-pub enum PendingAction {
+pub(crate) enum PendingAction {
     Open(PathBuf),
     Exit,
 }
 
 #[derive(Default)]
-pub struct AppState {
+pub(crate) struct AppState {
     pub loaded: Option<LoadedFile>,
     pub status: Option<Status>,
     pub pending_action: Option<PendingAction>,

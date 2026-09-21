@@ -83,8 +83,8 @@ impl FsbFileListTable {
 }
 
 #[derive(Clone, Debug)]
-pub struct FsbFileListData {
-    pub script_name: Value,
+struct FsbFileListData {
+    script_name: Value,
 }
 
 impl FsbFileListData {
@@ -125,7 +125,7 @@ impl FsbFileListData {
     }
 }
 
-pub const FSB_FILE_LIST_FIELDS: &[FieldDescriptor] = &[FieldDescriptor {
+const FSB_FILE_LIST_FIELDS: &[FieldDescriptor] = &[FieldDescriptor {
     name: "script_name",
     description: "",
     kind: FieldKind::String,

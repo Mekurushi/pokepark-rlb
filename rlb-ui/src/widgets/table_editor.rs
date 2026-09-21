@@ -3,7 +3,7 @@ use eframe::egui;
 use egui_extras::{Column, TableBuilder};
 use rlb_domain::{FieldConstraint, FieldDescriptor, FieldKind, RLBFile, Result, TableId, Value};
 
-pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
+pub(crate) fn show(ui: &mut egui::Ui, state: &mut AppState) {
     let Some(loaded) = &mut state.loaded else {
         ui.centered_and_justified(|ui| ui.weak("Open an .rlb file"));
         return;

@@ -1,13 +1,13 @@
 use std::collections::HashSet;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct RelocationTable {
+pub(crate) struct RelocationTable {
     sites: Vec<u32>,
     lookup: HashSet<u32>,
 }
 
 impl RelocationTable {
-    pub fn from_raw(sites: &[u32]) -> Self {
+    pub(crate) fn from_raw(sites: &[u32]) -> Self {
         let lookup = sites.iter().copied().collect();
         Self {
             sites: Vec::from(sites),
@@ -15,23 +15,23 @@ impl RelocationTable {
         }
     }
 
-    pub fn len(&self) -> usize {
+    fn len(&self) -> usize {
         self.sites.len()
     }
 
-    pub fn is_empty(&self) -> bool {
+    fn is_empty(&self) -> bool {
         self.sites.is_empty()
     }
 
-    pub fn sites(&self) -> impl Iterator<Item = u32> + '_ {
+    fn sites(&self) -> impl Iterator<Item = u32> + '_ {
         self.sites.iter().copied()
     }
 
-    pub fn as_slice(&self) -> &[u32] {
+    fn as_slice(&self) -> &[u32] {
         &self.sites
     }
 
-    pub fn is_relocated(&self, offset: u32) -> bool {
+    pub(crate) fn is_relocated(&self, offset: u32) -> bool {
         self.lookup.contains(&offset)
     }
 

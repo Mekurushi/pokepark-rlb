@@ -87,7 +87,7 @@ impl WanderingDataTable {
 }
 
 #[derive(Clone, Debug)]
-pub struct WanderingDataEntry {
+struct WanderingDataEntry {
     pokemon_unlock_id: Value,
     pokemon_friendship_id: Value,
     enabled: Value,
@@ -138,7 +138,7 @@ impl WanderingDataEntry {
     }
 }
 
-pub const WANDERING_DATA_FIELDS: &[FieldDescriptor] = &[
+const WANDERING_DATA_FIELDS: &[FieldDescriptor] = &[
     FieldDescriptor {
         name: "pokemon_unlock_id",
         description: "",

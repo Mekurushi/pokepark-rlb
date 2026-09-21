@@ -7,9 +7,9 @@ use rlb_error::{Error, Result};
 use rlb_format::{RawFile, TableRecord};
 
 #[derive(Debug, Clone)]
-pub struct TocSlot {
-    pub table: TableId,
-    pub label: String,
+struct TocSlot {
+    table: TableId,
+    label: String,
 }
 
 #[derive(Debug, Clone)]

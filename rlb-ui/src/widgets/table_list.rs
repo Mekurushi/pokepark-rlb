@@ -1,7 +1,7 @@
 use crate::state::{AppState, LoadedFile};
 use eframe::egui;
 
-pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
+pub(crate) fn show(ui: &mut egui::Ui, state: &mut AppState) {
     let Some(loaded) = &mut state.loaded else {
         ui.weak("Open an .rlb file");
         return;

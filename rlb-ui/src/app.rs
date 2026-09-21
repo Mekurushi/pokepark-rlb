@@ -5,7 +5,7 @@ use eframe::egui;
 use std::path::PathBuf;
 
 #[derive(Default)]
-pub struct RlbUiApp {
+pub(crate) struct RlbUiApp {
     state: AppState,
 }
 

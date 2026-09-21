@@ -88,25 +88,25 @@ impl ScriptListTable {
 }
 
 #[derive(Clone, Debug)]
-pub struct ScriptListEntry {
-    pub name: Value,
-    pub object_id: Value,
-    pub minimum_chapter: Value,
-    pub medium_chapter: Value,
-    pub maximum_chapter: Value,
-    pub flagname: Value,
-    pub flag_value_condition: Value,
-    pub target_script: Value,
-    pub pad_0x1d: [u8; 3],
-    pub unknown: Value,
-    pub entrypoint: Value,
-    pub zone_id: Value,
-    pub area_id: Value,
-    pub position_id: Value,
-    pub pad_0x34: Value,
-    pub after_script_entrypoint: Value,
-    pub animation: Value,
-    pub flagname2: Value,
+struct ScriptListEntry {
+    name: Value,
+    object_id: Value,
+    minimum_chapter: Value,
+    medium_chapter: Value,
+    maximum_chapter: Value,
+    flagname: Value,
+    flag_value_condition: Value,
+    target_script: Value,
+    pad_0x1d: [u8; 3],
+    unknown: Value,
+    entrypoint: Value,
+    zone_id: Value,
+    area_id: Value,
+    position_id: Value,
+    pad_0x34: Value,
+    after_script_entrypoint: Value,
+    animation: Value,
+    flagname2: Value,
 }
 
 impl ScriptListEntry {
@@ -210,7 +210,7 @@ impl ScriptListEntry {
     }
 }
 
-pub const SCRIPT_LIST_FIELDS: &[FieldDescriptor] = &[
+const SCRIPT_LIST_FIELDS: &[FieldDescriptor] = &[
     FieldDescriptor {
         name: "name",
         description: "",

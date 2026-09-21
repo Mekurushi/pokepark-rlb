@@ -12,6 +12,7 @@ edition = "2024"
 [workspace.lints.rust]
 unsafe_code = "forbid"
 unused_imports = "warn"
+unreachable_pub = "forbid"
 
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
