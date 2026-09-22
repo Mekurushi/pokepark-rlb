@@ -107,6 +107,16 @@ impl ItemDispositionDataTable {
         self.entries.push(entry);
         Ok(index)
     }
+
+    pub(crate) fn remove_row(&mut self, index: usize) -> Result<()> {
+        if index >= self.entries.len() {
+            return Err(Error::Validation(format!(
+                "row index {index} out of bounds"
+            )));
+        }
+        self.entries.remove(index);
+        Ok(())
+    }
 }
 
 #[derive(Clone, Debug)]

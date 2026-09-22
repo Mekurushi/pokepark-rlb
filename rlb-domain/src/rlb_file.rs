@@ -226,6 +226,73 @@ impl RLBFile {
 
         Ok(index)
     }
+
+    pub fn remove_row(&mut self, table_id: TableId, row_index: usize) -> Result<()> {
+        let table = self
+            .table_collection
+            .get(table_id)
+            .ok_or_else(|| Error::Validation(format!("unknown TableId {table_id:?}")))?;
+        let schema = table.schema();
+
+        if let RowBoundary::Fixed { rows } = schema.rows.boundary {
+            return Err(Error::Validation(format!(
+                "cannot remove from fixed-size schema {:?} with {rows} rows",
+                schema.id
+            )));
+        }
+        if row_index >= table.entry_count() {
+            return Err(Error::Validation(format!(
+                "row index {row_index} out of bounds for schema {:?}",
+                schema.id
+            )));
+        }
+
+        let counter = if let RowBoundary::CountedBy { schema, field } = schema.rows.boundary {
+            let mut tables = self.table_collection.ids_with_schema(schema);
+            let counter_id = tables.next().ok_or_else(|| {
+                Error::Validation(format!("table with schema {schema:?} does not exist"))
+            })?;
+            if tables.next().is_some() {
+                return Err(Error::Validation(format!(
+                    "multiple tables use counter schema {schema:?}"
+                )));
+            }
+            let value = self
+                .table_collection
+                .get(counter_id)
+                .and_then(|table| table.get_field(0, field))
+                .ok_or_else(|| {
+                    Error::Validation(format!(
+                        "counter field {field:?} does not exist on schema {schema:?}"
+                    ))
+                })?;
+            let Value::Integer(value) = value else {
+                return Err(Error::Validation(format!(
+                    "counter field {schema:?}.{field} is not an integer"
+                )));
+            };
+            let value = value.checked_sub(1).ok_or_else(|| {
+                Error::Validation(format!("counter field {schema:?}.{field} underflowed"))
+            })?;
+            Some((counter_id, field, value))
+        } else {
+            None
+        };
+
+        self.table_collection
+            .get_mut(table_id)
+            .ok_or_else(|| Error::Validation(format!("unknown TableId {table_id:?}")))?
+            .remove_row(row_index)?;
+
+        if let Some((counter_id, field, value)) = counter {
+            self.table_collection
+                .get_mut(counter_id)
+                .ok_or_else(|| Error::Validation(format!("unknown TableId {counter_id:?}")))?
+                .set_field(0, field, Value::Integer(value))?;
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Debug)]

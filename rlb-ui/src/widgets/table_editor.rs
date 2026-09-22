@@ -31,7 +31,8 @@ pub(crate) fn show(ui: &mut egui::Ui, state: &mut AppState) {
     let mut error = None;
 
     //TODO: better flow than duplicate last row
-    let can_duplicate = entry_count > 0 && !matches!(row_boundary, RowBoundary::Fixed { .. });
+    let rows_are_mutable = !matches!(row_boundary, RowBoundary::Fixed { .. });
+    let can_duplicate = entry_count > 0 && rows_are_mutable;
     if ui
         .add_enabled(can_duplicate, egui::Button::new("Duplicate last row"))
         .clicked()
@@ -56,16 +57,25 @@ pub(crate) fn show(ui: &mut egui::Ui, state: &mut AppState) {
 
     ui.separator();
 
-    TableBuilder::new(ui)
+    let mut remove_row = None;
+    let mut table = TableBuilder::new(ui)
         .striped(true)
         .resizable(true)
         .auto_shrink([true, true])
-        .columns(Column::auto(), fields.len())
+        .columns(Column::auto(), fields.len());
+    if rows_are_mutable {
+        table = table.column(Column::auto());
+    }
+
+    table
         .header(row_height, |mut header| {
             for field in fields {
                 header.col(|ui| {
                     ui.strong(field.name).on_hover_text(field_hint(field));
                 });
+            }
+            if rows_are_mutable {
+                header.col(|_| {});
             }
         })
         .body(|body| {
@@ -76,8 +86,23 @@ pub(crate) fn show(ui: &mut egui::Ui, state: &mut AppState) {
                         edit_cell(ui, file, table_id, row_index, field, dirty, &mut error);
                     });
                 }
+                if rows_are_mutable {
+                    row.col(|ui| {
+                        if ui.small_button("X").on_hover_text("Remove row").clicked() {
+                            remove_row = Some(row_index);
+                        }
+                    });
+                }
             });
         });
+
+    if let Some(row_index) = remove_row {
+        match file.remove_row(table_id, row_index) {
+            Ok(()) => *dirty = true,
+            Err(e) => error = Some(format!("could not remove row: {e}")),
+        }
+    }
+
     if let Some(message) = error {
         state.status = Some(crate::state::Status::error(message));
     }

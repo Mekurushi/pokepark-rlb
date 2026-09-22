@@ -51,15 +51,15 @@ impl Table {
             "AttractionRanking" => {
                 Self::AttractionRanking(AttractionRankingTable::parse(context, offset)?)
             }
-            "dispositionDataHeader" => Self::DispositionDataHeader(
-                DispositionDataHeaderTable::parse(context, offset)?,
-            ),
-            "playerDispositionData" => Self::PlayerDispositionData(
-                PlayerDispositionDataTable::parse(context, offset)?,
-            ),
-            "pokemonDispositionData" => Self::PokemonDispositionData(
-                PokemonDispositionDataTable::parse(context, offset)?,
-            ),
+            "dispositionDataHeader" => {
+                Self::DispositionDataHeader(DispositionDataHeaderTable::parse(context, offset)?)
+            }
+            "playerDispositionData" => {
+                Self::PlayerDispositionData(PlayerDispositionDataTable::parse(context, offset)?)
+            }
+            "pokemonDispositionData" => {
+                Self::PokemonDispositionData(PokemonDispositionDataTable::parse(context, offset)?)
+            }
             "itemDispositionData" => {
                 Self::ItemDispositionData(ItemDispositionDataTable::parse(context, offset)?)
             }
@@ -74,9 +74,7 @@ impl Table {
             | "HitDashScriptList"
             | "HitThunderboltScriptList"
             | "TimeOutScriptList"
-            | "TouchAreaScriptList" => {
-                Self::ScriptList(ScriptListTable::parse(context, offset)?)
-            }
+            | "TouchAreaScriptList" => Self::ScriptList(ScriptListTable::parse(context, offset)?),
             "FsbFileListData" => Self::FsbFileList(FsbFileListTable::parse(context, offset)?),
             "WanderingDataTable" => {
                 Self::WanderingData(WanderingDataTable::parse(context, offset)?)
@@ -194,6 +192,24 @@ impl Table {
             Self::WanderingData(table) => table.append_row(row),
             _ => Err(Error::Validation(format!(
                 "appending rows to {:?} is not supported",
+                self.schema().id
+            ))),
+        }
+    }
+
+    pub(crate) fn remove_row(&mut self, index: usize) -> Result<()> {
+        match self {
+            Self::AttractionRanking(table) => table.remove_row(index),
+            Self::PlayerDispositionData(table) => table.remove_row(index),
+            Self::PokemonDispositionData(table) => table.remove_row(index),
+            Self::ItemDispositionData(table) => table.remove_row(index),
+            Self::ItemKindTotalNumData(table) => table.remove_row(index),
+            Self::Flag(table) => table.remove_row(index),
+            Self::ScriptList(table) => table.remove_row(index),
+            Self::FsbFileList(table) => table.remove_row(index),
+            Self::WanderingData(table) => table.remove_row(index),
+            _ => Err(Error::Validation(format!(
+                "removing rows from {:?} is not supported",
                 self.schema().id
             ))),
         }
