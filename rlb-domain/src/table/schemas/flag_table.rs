@@ -1,7 +1,10 @@
+use crate::Value;
 use crate::table::codec::{EntryDeserializer, EntrySerializer};
 use crate::table::serialization::RelocatableTable;
-use crate::table::{FieldConstraint, FieldDescriptor, FieldKind, ParseContext};
-use crate::Value;
+use crate::table::{
+    FieldConstraint, FieldDescriptor, FieldKind, IntegerKind, ParseContext, RowBoundary, RowLayout,
+    SchemaDescriptor, SchemaId,
+};
 use rlb_error::{Error, Result};
 
 #[derive(Clone, Debug)]
@@ -12,6 +15,15 @@ pub(crate) struct FlagTable {
 
 impl FlagTable {
     const ENTRY_SIZE: usize = 0x08;
+    pub(crate) const SCHEMA: SchemaDescriptor = SchemaDescriptor {
+        id: SchemaId::FlagTable,
+        description: "flags and their bit widths",
+        fields: FlagEntry::FIELDS,
+        rows: RowLayout {
+            boundary: RowBoundary::Terminated,
+            max_rows: None,
+        },
+    };
 
     pub(crate) fn parse(context: &ParseContext<'_>, root: usize) -> Result<Self> {
         let mut entries = Vec::new();
@@ -87,7 +99,7 @@ impl FlagEntry {
         FieldDescriptor {
             name: "bit_width",
             description: "",
-            kind: FieldKind::Integer, //TODO: yeah I should really split the Integers
+            kind: FieldKind::Integer(IntegerKind::U8),
             constraint: FieldConstraint::IntegerRange {
                 min: 0,
                 max: u8::MAX as u32,

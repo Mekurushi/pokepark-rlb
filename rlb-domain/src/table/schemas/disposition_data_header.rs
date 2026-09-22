@@ -1,7 +1,8 @@
 use crate::table::ParseContext;
 use crate::table::codec::{EntryDeserializer, EntrySerializer};
-use crate::table::field::{FieldConstraint, FieldKind};
+use crate::table::field::{FieldConstraint, FieldKind, IntegerKind};
 use crate::table::serialization::RelocatableTable;
+use crate::table::{RowBoundary, RowLayout, SchemaDescriptor, SchemaId};
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
 
@@ -12,6 +13,16 @@ pub(crate) struct DispositionDataHeaderTable {
 
 impl DispositionDataHeaderTable {
     const ENTRY_SIZE: usize = 0x8;
+
+    pub(crate) const SCHEMA: SchemaDescriptor = SchemaDescriptor {
+        id: SchemaId::DispositionDataHeader,
+        description: "Counts for the disposition data tables",
+        fields: DispositionDataHeader::FIELDS,
+        rows: RowLayout {
+            boundary: RowBoundary::Fixed { rows: 1 },
+            max_rows: None,
+        },
+    };
 
     pub(crate) fn parse(context: &ParseContext<'_>, root_address: usize) -> Result<Self> {
         let mut de = EntryDeserializer::new(context, root_address);
@@ -65,7 +76,7 @@ impl DispositionDataHeader {
         FieldDescriptor {
             name: "player_disposition_count",
             description: "",
-            kind: FieldKind::Integer,
+            kind: FieldKind::Integer(IntegerKind::U8),
             constraint: FieldConstraint::IntegerRange {
                 min: 0,
                 max: u8::MAX as u32,
@@ -74,7 +85,7 @@ impl DispositionDataHeader {
         FieldDescriptor {
             name: "pokemon_disposition_count",
             description: "",
-            kind: FieldKind::Integer,
+            kind: FieldKind::Integer(IntegerKind::U8),
             constraint: FieldConstraint::IntegerRange {
                 min: 0,
                 max: u8::MAX as u32,
@@ -83,7 +94,7 @@ impl DispositionDataHeader {
         FieldDescriptor {
             name: "item_disposition_count",
             description: "",
-            kind: FieldKind::Integer,
+            kind: FieldKind::Integer(IntegerKind::U8),
             constraint: FieldConstraint::IntegerRange {
                 min: 0,
                 max: u8::MAX as u32,
@@ -92,7 +103,7 @@ impl DispositionDataHeader {
         FieldDescriptor {
             name: "item_kind_total_num_count",
             description: "",
-            kind: FieldKind::Integer,
+            kind: FieldKind::Integer(IntegerKind::U8),
             constraint: FieldConstraint::IntegerRange {
                 min: 0,
                 max: u8::MAX as u32,

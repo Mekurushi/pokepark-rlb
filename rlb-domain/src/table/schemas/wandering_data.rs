@@ -1,7 +1,8 @@
 use crate::table::ParseContext;
 use crate::table::codec::{EntryDeserializer, EntrySerializer};
-use crate::table::field::{FieldConstraint, FieldKind};
+use crate::table::field::{FieldConstraint, FieldKind, IntegerKind};
 use crate::table::serialization::RelocatableTable;
+use crate::table::{RowBoundary, RowLayout, SchemaDescriptor, SchemaId};
 use crate::util::checked_bool;
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
@@ -14,6 +15,15 @@ pub(crate) struct WanderingDataTable {
 
 impl WanderingDataTable {
     const ENTRY_SIZE: usize = WanderingDataEntry::SIZE;
+    pub(crate) const SCHEMA: SchemaDescriptor = SchemaDescriptor {
+        id: SchemaId::WanderingData,
+        description: "Wandering Pokémon unlock and friendship data.",
+        fields: WanderingDataEntry::FIELDS,
+        rows: RowLayout {
+            boundary: RowBoundary::Terminated,
+            max_rows: None,
+        },
+    };
 
     pub(crate) fn parse(context: &ParseContext<'_>, root_address: usize) -> Result<Self> {
         let mut entries = Vec::new();
@@ -125,13 +135,13 @@ const WANDERING_DATA_FIELDS: &[FieldDescriptor] = &[
     FieldDescriptor {
         name: "pokemon_unlock_id",
         description: "",
-        kind: FieldKind::Integer,
+        kind: FieldKind::Integer(IntegerKind::U32),
         constraint: FieldConstraint::None,
     },
     FieldDescriptor {
         name: "pokemon_friendship_id",
         description: "",
-        kind: FieldKind::Integer,
+        kind: FieldKind::Integer(IntegerKind::U32),
         constraint: FieldConstraint::None,
     },
     FieldDescriptor {

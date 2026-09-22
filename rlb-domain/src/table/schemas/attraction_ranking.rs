@@ -1,10 +1,12 @@
+use crate::Value;
 use crate::table::codec::{EntryDeserializer, EntrySerializer};
 use crate::table::serialization::RelocatableTable;
-use crate::table::{FieldConstraint, FieldDescriptor, FieldKind, ParseContext};
-use crate::Value;
+use crate::table::{
+    FieldConstraint, FieldDescriptor, FieldKind, IntegerKind, ParseContext, RowBoundary, RowLayout,
+    SchemaDescriptor, SchemaId,
+};
 use rlb_error::{Error, Result};
 
-//usable rows are capped at 26
 #[derive(Clone, Debug)]
 pub(crate) struct AttractionRankingTable {
     entries: Vec<AttractionRankingEntry>,
@@ -14,6 +16,17 @@ pub(crate) struct AttractionRankingTable {
 impl AttractionRankingTable {
     const ENTRY_SIZE: usize = 0x1c;
     const TERMINATOR_FRIENDSHIP_ID: u32 = 0xc9;
+
+    pub(crate) const SCHEMA: SchemaDescriptor = SchemaDescriptor {
+        id: SchemaId::AttractionRanking,
+        description: "Attraction ranking entries",
+        fields: AttractionRankingEntry::FIELDS,
+        rows: RowLayout {
+            boundary: RowBoundary::Terminated,
+            max_rows: Some(26), // game caps useable entries at 26 TODO: check whether limiting
+            // that and only allowing higher values once the cap is patchable?
+        },
+    };
 
     pub(crate) fn parse(context: &ParseContext<'_>, root: usize) -> Result<Self> {
         let mut entries = Vec::new();
@@ -87,43 +100,43 @@ impl AttractionRankingEntry {
         FieldDescriptor {
             name: "friendship_id",
             description: "",
-            kind: FieldKind::Integer,
+            kind: FieldKind::Integer(IntegerKind::U32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "record_target",
             description: "",
-            kind: FieldKind::Integer,
+            kind: FieldKind::Integer(IntegerKind::U32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "bonus_record_target",
             description: "",
-            kind: FieldKind::Integer,
+            kind: FieldKind::Integer(IntegerKind::U32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "unknown_0x0c",
             description: "",
-            kind: FieldKind::Integer,
+            kind: FieldKind::Integer(IntegerKind::U32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "unknown_0x10",
             description: "",
-            kind: FieldKind::Integer,
+            kind: FieldKind::Integer(IntegerKind::U32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "unknown_0x14",
             description: "",
-            kind: FieldKind::Integer,
+            kind: FieldKind::Integer(IntegerKind::U32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "unknown_0x18",
             description: "",
-            kind: FieldKind::Integer,
+            kind: FieldKind::Integer(IntegerKind::U32),
             constraint: FieldConstraint::None,
         },
     ];

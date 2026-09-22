@@ -2,7 +2,7 @@ use crate::relocation::RelocationTable;
 use crate::string_pool::StringPool;
 use crate::table::{ParseContext, Table, TableCollection, TableId};
 use crate::util::{checked_u32, resolve_string_from_raw_data};
-use crate::{FieldDescriptor, Value};
+use crate::{FieldDescriptor, SchemaDescriptor, Value};
 use rlb_error::{Error, Result};
 use rlb_format::{RawFile, TableRecord};
 
@@ -24,6 +24,7 @@ pub struct TableView<'a> {
     pub id: TableId,
     pub label: &'a str,
     pub fields: &'static [FieldDescriptor],
+    pub schema: &'static SchemaDescriptor,
     pub entry_count: usize,
 }
 
@@ -124,6 +125,7 @@ impl RLBFile {
                     id: slot.table,
                     label: &slot.label,
                     fields: table.field_descriptors(),
+                    schema: table.schema(),
                     entry_count: table.entry_count(),
                 })
             })

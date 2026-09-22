@@ -120,8 +120,8 @@ fn edit_cell(
 
 fn field_hint(field: &FieldDescriptor) -> String {
     let kind = match field.kind {
-        FieldKind::Integer => "integer",
-        FieldKind::Float => "float",
+        FieldKind::Integer(_) => "integer",
+        FieldKind::Float(_) => "float",
         FieldKind::String => "string",
         FieldKind::Boolean => "boolean",
     };

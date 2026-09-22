@@ -2,6 +2,7 @@ mod codec;
 mod collection;
 mod field;
 mod parse_context;
+mod schema;
 mod schemas;
 mod serialization;
 
@@ -20,8 +21,9 @@ use crate::table::serialization::RelocatableTable;
 use rlb_error::{Error, Result};
 
 pub(crate) use collection::TableCollection;
-pub use field::{FieldConstraint, FieldDescriptor, FieldKind};
+pub use field::{FieldConstraint, FieldDescriptor, FieldKind, FloatKind, IntegerKind};
 pub(crate) use parse_context::ParseContext;
+pub use schema::{RowBoundary, RowLayout, SchemaDescriptor, SchemaId};
 
 slotmap::new_key_type! {
     pub struct TableId;
@@ -134,6 +136,21 @@ impl Table {
             TableKind::ScriptList(table) => table.fields(),
             TableKind::FsbFileList(table) => table.fields(),
             TableKind::WanderingData(table) => table.fields(),
+        }
+    }
+
+    pub(crate) fn schema(&self) -> &'static SchemaDescriptor {
+        match &self.kind {
+            TableKind::AttractionRanking(_) => &AttractionRankingTable::SCHEMA,
+            TableKind::DispositionDataHeader(_) => &DispositionDataHeaderTable::SCHEMA,
+            TableKind::PlayerDispositionData(_) => &PlayerDispositionDataTable::SCHEMA,
+            TableKind::PokemonDispositionData(_) => &PokemonDispositionDataTable::SCHEMA,
+            TableKind::ItemDispositionData(_) => &ItemDispositionDataTable::SCHEMA,
+            TableKind::ItemKindTotalNumData(_) => &ItemKindTotalNumDataTable::SCHEMA,
+            TableKind::Flag(_) => &FlagTable::SCHEMA,
+            TableKind::ScriptList(_) => &ScriptListTable::SCHEMA,
+            TableKind::FsbFileList(_) => &FsbFileListTable::SCHEMA,
+            TableKind::WanderingData(_) => &WanderingDataTable::SCHEMA,
         }
     }
 

@@ -1,7 +1,8 @@
 use crate::table::ParseContext;
 use crate::table::codec::{EntryDeserializer, EntrySerializer};
-use crate::table::field::{FieldConstraint, FieldKind};
+use crate::table::field::{FieldConstraint, FieldKind, IntegerKind};
 use crate::table::serialization::RelocatableTable;
+use crate::table::{RowBoundary, RowLayout, SchemaDescriptor, SchemaId};
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
 
@@ -13,6 +14,15 @@ pub(crate) struct ScriptListTable {
 
 impl ScriptListTable {
     const ENTRY_SIZE: usize = ScriptListEntry::SIZE;
+    pub(crate) const SCHEMA: SchemaDescriptor = SchemaDescriptor {
+        id: SchemaId::ScriptList,
+        description: "script wiring",
+        fields: ScriptListEntry::FIELDS,
+        rows: RowLayout {
+            boundary: RowBoundary::Terminated,
+            max_rows: None,
+        },
+    };
 
     pub(crate) fn parse(context: &ParseContext<'_>, root_address: usize) -> Result<Self> {
         let mut entries = Vec::new();
@@ -203,25 +213,25 @@ const SCRIPT_LIST_FIELDS: &[FieldDescriptor] = &[
     FieldDescriptor {
         name: "object_id",
         description: "",
-        kind: FieldKind::Integer,
+        kind: FieldKind::Integer(IntegerKind::U32),
         constraint: FieldConstraint::None,
     },
     FieldDescriptor {
         name: "minimum_chapter",
         description: "",
-        kind: FieldKind::Integer,
+        kind: FieldKind::Integer(IntegerKind::U32),
         constraint: FieldConstraint::None,
     },
     FieldDescriptor {
         name: "medium_chapter",
         description: "",
-        kind: FieldKind::Integer,
+        kind: FieldKind::Integer(IntegerKind::U32),
         constraint: FieldConstraint::None,
     },
     FieldDescriptor {
         name: "maximum_chapter",
         description: "",
-        kind: FieldKind::Integer,
+        kind: FieldKind::Integer(IntegerKind::U32),
         constraint: FieldConstraint::None,
     },
     FieldDescriptor {
@@ -233,13 +243,13 @@ const SCRIPT_LIST_FIELDS: &[FieldDescriptor] = &[
     FieldDescriptor {
         name: "flag_value_condition",
         description: "",
-        kind: FieldKind::Integer,
+        kind: FieldKind::Integer(IntegerKind::U32),
         constraint: FieldConstraint::None,
     },
     FieldDescriptor {
         name: "target_script",
         description: "",
-        kind: FieldKind::Integer,
+        kind: FieldKind::Integer(IntegerKind::U8),
         constraint: FieldConstraint::TableIndex {
             table: "FsbFileListData",
         },
@@ -247,7 +257,7 @@ const SCRIPT_LIST_FIELDS: &[FieldDescriptor] = &[
     FieldDescriptor {
         name: "unknown",
         description: "",
-        kind: FieldKind::Integer,
+        kind: FieldKind::Integer(IntegerKind::U32),
         constraint: FieldConstraint::None,
     },
     FieldDescriptor {
@@ -259,25 +269,25 @@ const SCRIPT_LIST_FIELDS: &[FieldDescriptor] = &[
     FieldDescriptor {
         name: "zone_id",
         description: "",
-        kind: FieldKind::Integer,
+        kind: FieldKind::Integer(IntegerKind::U32),
         constraint: FieldConstraint::None,
     },
     FieldDescriptor {
         name: "area_id",
         description: "",
-        kind: FieldKind::Integer,
+        kind: FieldKind::Integer(IntegerKind::U32),
         constraint: FieldConstraint::None,
     },
     FieldDescriptor {
         name: "position_id",
         description: "",
-        kind: FieldKind::Integer,
+        kind: FieldKind::Integer(IntegerKind::U32),
         constraint: FieldConstraint::None,
     },
     FieldDescriptor {
         name: "pad_0x34",
         description: "",
-        kind: FieldKind::Integer,
+        kind: FieldKind::Integer(IntegerKind::U32),
         constraint: FieldConstraint::None,
     },
     FieldDescriptor {

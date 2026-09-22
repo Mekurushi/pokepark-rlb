@@ -1,7 +1,10 @@
 use crate::Value;
 use crate::table::codec::{EntryDeserializer, EntrySerializer};
 use crate::table::serialization::RelocatableTable;
-use crate::table::{FieldConstraint, FieldDescriptor, FieldKind, ParseContext};
+use crate::table::{
+    FieldConstraint, FieldDescriptor, FieldKind, FloatKind, ParseContext, RowBoundary, RowLayout,
+    SchemaDescriptor, SchemaId,
+};
 use rlb_error::{Error, Result};
 
 #[derive(Clone, Debug)]
@@ -11,6 +14,18 @@ pub(crate) struct PlayerDispositionDataTable {
 
 impl PlayerDispositionDataTable {
     const ENTRY_SIZE: usize = 0x10;
+    pub(crate) const SCHEMA: SchemaDescriptor = SchemaDescriptor {
+        id: SchemaId::PlayerDispositionData,
+        description: "Player disposition data",
+        fields: PlayerDispositionData::FIELDS,
+        rows: RowLayout {
+            boundary: RowBoundary::CountedBy {
+                schema: SchemaId::DispositionDataHeader,
+                field: "player_disposition_count",
+            },
+            max_rows: None,
+        },
+    };
     pub(crate) fn parse(context: &ParseContext<'_>, root: usize) -> Result<Self> {
         let header = context.table_offset("dispositionDataHeader")?;
         let count = usize::from(context.read_u8(header)?);
@@ -59,25 +74,25 @@ impl PlayerDispositionData {
         FieldDescriptor {
             name: "position_x",
             description: "",
-            kind: FieldKind::Float,
+            kind: FieldKind::Float(FloatKind::F32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "position_y",
             description: "",
-            kind: FieldKind::Float,
+            kind: FieldKind::Float(FloatKind::F32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "position_z",
             description: "",
-            kind: FieldKind::Float,
+            kind: FieldKind::Float(FloatKind::F32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "rotation_y",
             description: "",
-            kind: FieldKind::Float,
+            kind: FieldKind::Float(FloatKind::F32),
             constraint: FieldConstraint::None,
         },
     ];

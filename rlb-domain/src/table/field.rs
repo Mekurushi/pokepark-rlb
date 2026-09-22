@@ -1,9 +1,21 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FieldKind {
-    Integer,
-    Float,
+    Integer(IntegerKind),
+    Float(FloatKind),
     String,
     Boolean,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum IntegerKind {
+    U8,
+    U16,
+    U32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FloatKind {
+    F32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

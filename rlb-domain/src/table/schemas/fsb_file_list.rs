@@ -2,6 +2,7 @@ use crate::table::ParseContext;
 use crate::table::codec::{EntryDeserializer, EntrySerializer};
 use crate::table::field::{FieldConstraint, FieldKind};
 use crate::table::serialization::RelocatableTable;
+use crate::table::{RowBoundary, RowLayout, SchemaDescriptor, SchemaId};
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
 
@@ -13,6 +14,15 @@ pub(crate) struct FsbFileListTable {
 
 impl FsbFileListTable {
     const ENTRY_SIZE: usize = FsbFileListData::SIZE;
+    pub(crate) const SCHEMA: SchemaDescriptor = SchemaDescriptor {
+        id: SchemaId::FsbFileList,
+        description: "Script file names referenced by script-list tables",
+        fields: FsbFileListData::FIELDS,
+        rows: RowLayout {
+            boundary: RowBoundary::Terminated,
+            max_rows: None,
+        },
+    };
 
     pub(crate) fn parse(context: &ParseContext<'_>, root_address: usize) -> Result<Self> {
         let mut entries = Vec::new();

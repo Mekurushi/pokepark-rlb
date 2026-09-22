@@ -7,5 +7,8 @@ mod value;
 
 pub use rlb_error::{Error, Result};
 pub use rlb_file::{RLBFile, TableView};
-pub use table::{FieldConstraint, FieldDescriptor, FieldKind, TableId};
+pub use table::{
+    FieldConstraint, FieldDescriptor, FieldKind, FloatKind, IntegerKind, RowBoundary, RowLayout,
+    SchemaDescriptor, SchemaId, TableId,
+};
 pub use value::Value;

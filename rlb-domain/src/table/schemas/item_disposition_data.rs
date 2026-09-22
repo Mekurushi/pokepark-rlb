@@ -1,7 +1,10 @@
 use crate::Value;
 use crate::table::codec::{EntryDeserializer, EntrySerializer};
 use crate::table::serialization::RelocatableTable;
-use crate::table::{FieldConstraint, FieldDescriptor, FieldKind, ParseContext};
+use crate::table::{
+    FieldConstraint, FieldDescriptor, FieldKind, FloatKind, IntegerKind, ParseContext, RowBoundary,
+    RowLayout, SchemaDescriptor, SchemaId,
+};
 use rlb_error::{Error, Result};
 
 #[derive(Clone, Debug)]
@@ -10,6 +13,18 @@ pub(crate) struct ItemDispositionDataTable {
 }
 impl ItemDispositionDataTable {
     const ENTRY_SIZE: usize = 0x24;
+    pub(crate) const SCHEMA: SchemaDescriptor = SchemaDescriptor {
+        id: SchemaId::ItemDispositionData,
+        description: "Item disposition data",
+        fields: ItemDispositionData::FIELDS,
+        rows: RowLayout {
+            boundary: RowBoundary::CountedBy {
+                schema: SchemaId::DispositionDataHeader,
+                field: "item_disposition_count",
+            },
+            max_rows: None,
+        },
+    };
     pub(crate) fn parse(context: &ParseContext<'_>, root: usize) -> Result<Self> {
         let header = context.table_offset("dispositionDataHeader")?;
         let count = usize::from(context.read_u8(header + 2)?);
@@ -64,7 +79,7 @@ impl ItemDispositionData {
         FieldDescriptor {
             name: "object_id",
             description: "",
-            kind: FieldKind::Integer,
+            kind: FieldKind::Integer(IntegerKind::U16),
             constraint: FieldConstraint::IntegerRange {
                 min: 0,
                 max: u16::MAX as u32,
@@ -73,7 +88,7 @@ impl ItemDispositionData {
         FieldDescriptor {
             name: "object_type",
             description: "",
-            kind: FieldKind::Integer,
+            kind: FieldKind::Integer(IntegerKind::U16),
             constraint: FieldConstraint::IntegerRange {
                 min: 0,
                 max: u16::MAX as u32,
@@ -82,49 +97,49 @@ impl ItemDispositionData {
         FieldDescriptor {
             name: "item_kind",
             description: "",
-            kind: FieldKind::Integer,
+            kind: FieldKind::Integer(IntegerKind::U32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "position_x",
             description: "",
-            kind: FieldKind::Float,
+            kind: FieldKind::Float(FloatKind::F32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "position_y",
             description: "",
-            kind: FieldKind::Float,
+            kind: FieldKind::Float(FloatKind::F32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "position_z",
             description: "",
-            kind: FieldKind::Float,
+            kind: FieldKind::Float(FloatKind::F32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "rotation_y",
             description: "",
-            kind: FieldKind::Float,
+            kind: FieldKind::Float(FloatKind::F32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "unknown_0x18",
             description: "",
-            kind: FieldKind::Float,
+            kind: FieldKind::Float(FloatKind::F32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "unknown_0x1c",
             description: "",
-            kind: FieldKind::Float,
+            kind: FieldKind::Float(FloatKind::F32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "unknown_0x20",
             description: "",
-            kind: FieldKind::Float,
+            kind: FieldKind::Float(FloatKind::F32),
             constraint: FieldConstraint::None,
         },
     ];

@@ -1,7 +1,8 @@
 use crate::table::ParseContext;
 use crate::table::codec::{EntryDeserializer, EntrySerializer};
-use crate::table::field::{FieldConstraint, FieldKind};
+use crate::table::field::{FieldConstraint, FieldKind, FloatKind, IntegerKind};
 use crate::table::serialization::RelocatableTable;
+use crate::table::{RowBoundary, RowLayout, SchemaDescriptor, SchemaId};
 use crate::{FieldDescriptor, Value};
 use rlb_error::{Error, Result};
 
@@ -13,6 +14,18 @@ pub(crate) struct PokemonDispositionDataTable {
 impl PokemonDispositionDataTable {
     const ENTRY_SIZE: usize = 0x34;
     const COUNT_OFFSET: usize = 0x1;
+    pub(crate) const SCHEMA: SchemaDescriptor = SchemaDescriptor {
+        id: SchemaId::PokemonDispositionData,
+        description: "Pokemon disposition data",
+        fields: PokemonDispositionData::FIELDS,
+        rows: RowLayout {
+            boundary: RowBoundary::CountedBy {
+                schema: SchemaId::DispositionDataHeader,
+                field: "pokemon_disposition_count",
+            },
+            max_rows: None,
+        },
+    };
 
     pub(crate) fn parse(context: &ParseContext<'_>, root_address: usize) -> Result<Self> {
         let header = context.table_offset("dispositionDataHeader")?;
@@ -76,7 +89,7 @@ impl PokemonDispositionData {
         FieldDescriptor {
             name: "object_id",
             description: "",
-            kind: FieldKind::Integer,
+            kind: FieldKind::Integer(IntegerKind::U16),
             constraint: FieldConstraint::IntegerRange {
                 min: 0,
                 max: u16::MAX as u32,
@@ -85,49 +98,49 @@ impl PokemonDispositionData {
         FieldDescriptor {
             name: "friendship_id",
             description: "",
-            kind: FieldKind::Integer,
+            kind: FieldKind::Integer(IntegerKind::U32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "walking_ai_enabled",
             description: "",
-            kind: FieldKind::Integer,
+            kind: FieldKind::Integer(IntegerKind::U32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "field_position_candidates",
             description: "",
-            kind: FieldKind::Integer,
+            kind: FieldKind::Integer(IntegerKind::U32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "position_x",
             description: "",
-            kind: FieldKind::Float,
+            kind: FieldKind::Float(FloatKind::F32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "position_y",
             description: "",
-            kind: FieldKind::Float,
+            kind: FieldKind::Float(FloatKind::F32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "position_z",
             description: "",
-            kind: FieldKind::Float,
+            kind: FieldKind::Float(FloatKind::F32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "rotation_y",
             description: "",
-            kind: FieldKind::Float,
+            kind: FieldKind::Float(FloatKind::F32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "field_position_override",
             description: "",
-            kind: FieldKind::Integer,
+            kind: FieldKind::Integer(IntegerKind::U8),
             constraint: FieldConstraint::IntegerRange {
                 min: 0,
                 max: u8::MAX as u32,
@@ -136,25 +149,25 @@ impl PokemonDispositionData {
         FieldDescriptor {
             name: "unlock_id",
             description: "",
-            kind: FieldKind::Integer,
+            kind: FieldKind::Integer(IntegerKind::U32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "skill_game_type",
             description: "",
-            kind: FieldKind::Integer,
+            kind: FieldKind::Integer(IntegerKind::U32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "skill_game_start_position_group",
             description: "",
-            kind: FieldKind::Integer,
+            kind: FieldKind::Integer(IntegerKind::U32),
             constraint: FieldConstraint::None,
         },
         FieldDescriptor {
             name: "damage_disposition",
             description: "",
-            kind: FieldKind::Integer,
+            kind: FieldKind::Integer(IntegerKind::U32),
             constraint: FieldConstraint::None,
         },
     ];
