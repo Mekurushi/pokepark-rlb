@@ -1,10 +1,10 @@
-use crate::Value;
 use crate::table::codec::{EntryDeserializer, EntrySerializer};
 use crate::table::serialization::RelocatableTable;
 use crate::table::{
     FieldConstraint, FieldDescriptor, FieldKind, FloatKind, IntegerKind, ParseContext, RowBoundary,
     RowLayout, SchemaDescriptor, SchemaId,
 };
+use crate::{Row, Value};
 use rlb_error::{Error, Result};
 
 #[derive(Clone, Debug)]
@@ -58,6 +58,54 @@ impl ItemDispositionDataTable {
             .get_mut(index)
             .ok_or_else(|| Error::Validation(format!("entry index {index} out of bounds")))?
             .set(field, value)
+    }
+
+    pub(crate) fn append_row(&mut self, row: &Row) -> Result<usize> {
+        let entry = ItemDispositionData {
+            object_id: row
+                .get("object_id")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"object_id\"".into()))?,
+            object_type: row
+                .get("object_type")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"object_type\"".into()))?,
+            item_kind: row
+                .get("item_kind")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"item_kind\"".into()))?,
+            position_x: row
+                .get("position_x")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"position_x\"".into()))?,
+            position_y: row
+                .get("position_y")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"position_y\"".into()))?,
+            position_z: row
+                .get("position_z")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"position_z\"".into()))?,
+            rotation_y: row
+                .get("rotation_y")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"rotation_y\"".into()))?,
+            unknown_0x18: row
+                .get("unknown_0x18")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"unknown_0x18\"".into()))?,
+            unknown_0x1c: row
+                .get("unknown_0x1c")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"unknown_0x1c\"".into()))?,
+            unknown_0x20: row
+                .get("unknown_0x20")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"unknown_0x20\"".into()))?,
+        };
+        let index = self.entries.len();
+        self.entries.push(entry);
+        Ok(index)
     }
 }
 

@@ -1,10 +1,10 @@
-use crate::Value;
 use crate::table::codec::{EntryDeserializer, EntrySerializer};
 use crate::table::serialization::RelocatableTable;
 use crate::table::{
     FieldConstraint, FieldDescriptor, FieldKind, IntegerKind, ParseContext, RowBoundary, RowLayout,
     SchemaDescriptor, SchemaId,
 };
+use crate::{Row, Value};
 use rlb_error::{Error, Result};
 
 #[derive(Clone, Debug)]
@@ -78,6 +78,23 @@ impl FlagTable {
             .get_mut(index)
             .ok_or_else(|| Error::Validation(format!("entry index {index} out of bounds")))?
             .set(field, value)
+    }
+
+    pub(crate) fn append_row(&mut self, row: &Row) -> Result<usize> {
+        let entry = FlagEntry {
+            flag_name: row
+                .get("flag_name")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"flag_name\"".into()))?,
+            bit_width: row
+                .get("bit_width")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"bit_width\"".into()))?,
+            pad_0x05: [0; 3],
+        };
+        let index = self.entries.len();
+        self.entries.push(entry);
+        Ok(index)
     }
 }
 

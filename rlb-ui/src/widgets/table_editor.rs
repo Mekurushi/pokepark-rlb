@@ -1,7 +1,9 @@
 use crate::state::{AppState, LoadedFile};
 use eframe::egui;
 use egui_extras::{Column, TableBuilder};
-use rlb_domain::{FieldConstraint, FieldDescriptor, FieldKind, RLBFile, Result, TableId, Value};
+use rlb_domain::{
+    FieldConstraint, FieldDescriptor, FieldKind, RLBFile, Result, Row, RowBoundary, TableId, Value,
+};
 
 pub(crate) fn show(ui: &mut egui::Ui, state: &mut AppState) {
     let Some(loaded) = &mut state.loaded else {
@@ -13,7 +15,9 @@ pub(crate) fn show(ui: &mut egui::Ui, state: &mut AppState) {
         ui.centered_and_justified(|ui| ui.weak("Select a table"));
         return;
     };
-    let Some((label, fields, entry_count)) = table_lookup(loaded, table_id).ok().flatten() else {
+    let Some((label, fields, row_boundary, entry_count)) =
+        table_lookup(loaded, table_id).ok().flatten()
+    else {
         ui.centered_and_justified(|ui| ui.weak("Table not resolvable"));
         return;
     };
@@ -25,6 +29,32 @@ pub(crate) fn show(ui: &mut egui::Ui, state: &mut AppState) {
 
     let LoadedFile { file, dirty, .. } = loaded;
     let mut error = None;
+
+    //TODO: better flow than duplicate last row
+    let can_duplicate = entry_count > 0 && !matches!(row_boundary, RowBoundary::Fixed { .. });
+    if ui
+        .add_enabled(can_duplicate, egui::Button::new("Duplicate last row"))
+        .clicked()
+    {
+        let source_row = entry_count - 1;
+        let mut row = Row::new();
+        for field in fields {
+            let Some(value) = file.get_field(table_id, source_row, field.name) else {
+                error = Some(format!("could not read \"{}\"", field.name));
+                break;
+            };
+            row.insert(field.name, value);
+        }
+
+        if error.is_none() {
+            match file.append_row(table_id, row) {
+                Ok(_) => *dirty = true,
+                Err(e) => error = Some(format!("could not duplicate row: {e}")),
+            }
+        }
+    }
+
+    ui.separator();
 
     TableBuilder::new(ui)
         .striped(true)
@@ -56,13 +86,20 @@ pub(crate) fn show(ui: &mut egui::Ui, state: &mut AppState) {
 fn table_lookup(
     loaded: &LoadedFile,
     table_id: TableId,
-) -> Result<Option<(String, &'static [FieldDescriptor], usize)>> {
+) -> Result<Option<(String, &'static [FieldDescriptor], RowBoundary, usize)>> {
     Ok(loaded
         .file
         .tables()?
         .iter()
         .find(|table| table.id == table_id)
-        .map(|table| (table.label.to_owned(), table.fields, table.entry_count)))
+        .map(|table| {
+            (
+                table.label.to_owned(),
+                table.fields,
+                table.schema.rows.boundary,
+                table.entry_count,
+            )
+        }))
 }
 
 fn edit_cell(

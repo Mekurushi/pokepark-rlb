@@ -1,6 +1,6 @@
 use crate::string_pool::StringPool;
 use crate::table::serialization::SerializedTableCollection;
-use crate::table::{Table, TableId};
+use crate::table::{SchemaId, Table, TableId};
 use crate::util::checked_u32;
 use rlb_error::{Error, Result};
 use slotmap::SlotMap;
@@ -74,5 +74,11 @@ impl TableCollection {
     }
     pub(crate) fn get_mut(&mut self, id: TableId) -> Option<&mut Table> {
         self.map.get_mut(id)
+    }
+
+    pub(crate) fn ids_with_schema(&self, schema: SchemaId) -> impl Iterator<Item = TableId> + '_ {
+        self.map
+            .iter()
+            .filter_map(move |(id, table)| (table.schema().id == schema).then_some(id))
     }
 }

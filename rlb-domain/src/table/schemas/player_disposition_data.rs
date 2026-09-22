@@ -1,10 +1,10 @@
-use crate::Value;
 use crate::table::codec::{EntryDeserializer, EntrySerializer};
 use crate::table::serialization::RelocatableTable;
 use crate::table::{
     FieldConstraint, FieldDescriptor, FieldKind, FloatKind, ParseContext, RowBoundary, RowLayout,
     SchemaDescriptor, SchemaId,
 };
+use crate::{Row, Value};
 use rlb_error::{Error, Result};
 
 #[derive(Clone, Debug)]
@@ -59,6 +59,30 @@ impl PlayerDispositionDataTable {
             .get_mut(index)
             .ok_or_else(|| Error::Validation(format!("entry index {index} out of bounds")))?
             .set(field, value)
+    }
+
+    pub(crate) fn append_row(&mut self, row: &Row) -> Result<usize> {
+        let entry = PlayerDispositionData {
+            position_x: row
+                .get("position_x")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"position_x\"".into()))?,
+            position_y: row
+                .get("position_y")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"position_y\"".into()))?,
+            position_z: row
+                .get("position_z")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"position_z\"".into()))?,
+            rotation_y: row
+                .get("rotation_y")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"rotation_y\"".into()))?,
+        };
+        let index = self.entries.len();
+        self.entries.push(entry);
+        Ok(index)
     }
 }
 // I think this could be unused in the game TODO: validate

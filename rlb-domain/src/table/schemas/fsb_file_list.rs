@@ -3,7 +3,7 @@ use crate::table::codec::{EntryDeserializer, EntrySerializer};
 use crate::table::field::{FieldConstraint, FieldKind};
 use crate::table::serialization::RelocatableTable;
 use crate::table::{RowBoundary, RowLayout, SchemaDescriptor, SchemaId};
-use crate::{FieldDescriptor, Value};
+use crate::{FieldDescriptor, Row, Value};
 use rlb_error::{Error, Result};
 
 #[derive(Clone, Debug)]
@@ -76,6 +76,18 @@ impl FsbFileListTable {
             .get_mut(index)
             .ok_or_else(|| Error::Validation(format!("entry index {index} out of bounds")))?;
         entry.set(field, value)
+    }
+
+    pub(crate) fn append_row(&mut self, row: &Row) -> Result<usize> {
+        let entry = FsbFileListData {
+            script_name: row
+                .get("script_name")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"script_name\"".into()))?,
+        };
+        let index = self.entries.len();
+        self.entries.push(entry);
+        Ok(index)
     }
 }
 

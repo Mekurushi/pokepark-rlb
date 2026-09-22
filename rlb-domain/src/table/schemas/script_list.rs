@@ -3,7 +3,7 @@ use crate::table::codec::{EntryDeserializer, EntrySerializer};
 use crate::table::field::{FieldConstraint, FieldKind, IntegerKind};
 use crate::table::serialization::RelocatableTable;
 use crate::table::{RowBoundary, RowLayout, SchemaDescriptor, SchemaId};
-use crate::{FieldDescriptor, Value};
+use crate::{FieldDescriptor, Row, Value};
 use rlb_error::{Error, Result};
 
 #[derive(Clone, Debug)]
@@ -81,6 +81,81 @@ impl ScriptListTable {
             .get_mut(index)
             .ok_or_else(|| Error::Validation(format!("entry index {index} out of bounds")))?;
         entry.set(field, value)
+    }
+
+    pub(crate) fn append_row(&mut self, row: &Row) -> Result<usize> {
+        let entry = ScriptListEntry {
+            name: row
+                .get("name")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"name\"".into()))?,
+            object_id: row
+                .get("object_id")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"object_id\"".into()))?,
+            minimum_chapter: row
+                .get("minimum_chapter")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"minimum_chapter\"".into()))?,
+            medium_chapter: row
+                .get("medium_chapter")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"medium_chapter\"".into()))?,
+            maximum_chapter: row
+                .get("maximum_chapter")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"maximum_chapter\"".into()))?,
+            flagname: row
+                .get("flagname")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"flagname\"".into()))?,
+            flag_value_condition: row.get("flag_value_condition").cloned().ok_or_else(|| {
+                Error::Validation("missing field \"flag_value_condition\"".into())
+            })?,
+            target_script: row
+                .get("target_script")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"target_script\"".into()))?,
+            pad_0x1d: [0; 3],
+            unknown: row
+                .get("unknown")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"unknown\"".into()))?,
+            entrypoint: row
+                .get("entrypoint")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"entrypoint\"".into()))?,
+            zone_id: row
+                .get("zone_id")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"zone_id\"".into()))?,
+            area_id: row
+                .get("area_id")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"area_id\"".into()))?,
+            position_id: row
+                .get("position_id")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"position_id\"".into()))?,
+            pad_0x34: row
+                .get("pad_0x34")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"pad_0x34\"".into()))?,
+            after_script_entrypoint: row.get("after_script_entrypoint").cloned().ok_or_else(
+                || Error::Validation("missing field \"after_script_entrypoint\"".into()),
+            )?,
+            animation: row
+                .get("animation")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"animation\"".into()))?,
+            flagname2: row
+                .get("flagname2")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"flagname2\"".into()))?,
+        };
+        let index = self.entries.len();
+        self.entries.push(entry);
+        Ok(index)
     }
 }
 

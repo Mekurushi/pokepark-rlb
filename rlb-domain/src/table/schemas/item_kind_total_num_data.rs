@@ -1,10 +1,10 @@
-use crate::Value;
 use crate::table::codec::{EntryDeserializer, EntrySerializer};
 use crate::table::serialization::RelocatableTable;
 use crate::table::{
     FieldConstraint, FieldDescriptor, FieldKind, IntegerKind, ParseContext, RowBoundary, RowLayout,
     SchemaDescriptor, SchemaId,
 };
+use crate::{Row, Value};
 use rlb_error::{Error, Result};
 
 #[derive(Clone, Debug)]
@@ -58,6 +58,22 @@ impl ItemKindTotalNumDataTable {
             .get_mut(index)
             .ok_or_else(|| Error::Validation(format!("entry index {index} out of bounds")))?
             .set(field, value)
+    }
+
+    pub(crate) fn append_row(&mut self, row: &Row) -> Result<usize> {
+        let entry = ItemKindTotalNumData {
+            item_kind: row
+                .get("item_kind")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"item_kind\"".into()))?,
+            amount: row
+                .get("amount")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"amount\"".into()))?,
+        };
+        let index = self.entries.len();
+        self.entries.push(entry);
+        Ok(index)
     }
 }
 

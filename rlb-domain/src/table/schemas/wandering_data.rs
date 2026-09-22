@@ -4,7 +4,7 @@ use crate::table::field::{FieldConstraint, FieldKind, IntegerKind};
 use crate::table::serialization::RelocatableTable;
 use crate::table::{RowBoundary, RowLayout, SchemaDescriptor, SchemaId};
 use crate::util::checked_bool;
-use crate::{FieldDescriptor, Value};
+use crate::{FieldDescriptor, Row, Value};
 use rlb_error::{Error, Result};
 
 #[derive(Clone, Debug)]
@@ -81,6 +81,12 @@ impl WanderingDataTable {
             .ok_or_else(|| Error::Validation(format!("entry index {index} out of bounds")))?;
         entry.set(field, value)
     }
+
+    pub(crate) fn append_row(&mut self, row: &Row) -> Result<usize> {
+        let index = self.entries.len();
+        self.entries.push(WanderingDataEntry::from_row(row)?);
+        Ok(index)
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -94,6 +100,23 @@ struct WanderingDataEntry {
 impl WanderingDataEntry {
     pub(crate) const SIZE: usize = 0xC;
     pub(crate) const FIELDS: &'static [FieldDescriptor] = WANDERING_DATA_FIELDS;
+
+    fn from_row(row: &Row) -> Result<Self> {
+        Ok(Self {
+            pokemon_unlock_id: row
+                .get("pokemon_unlock_id")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"pokemon_unlock_id\"".into()))?,
+            pokemon_friendship_id: row.get("pokemon_friendship_id").cloned().ok_or_else(|| {
+                Error::Validation("missing field \"pokemon_friendship_id\"".into())
+            })?,
+            enabled: row
+                .get("enabled")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"enabled\"".into()))?,
+            pad: [0; 3],
+        })
+    }
 
     pub(crate) fn get(&self, field: &str) -> Option<Value> {
         match field {

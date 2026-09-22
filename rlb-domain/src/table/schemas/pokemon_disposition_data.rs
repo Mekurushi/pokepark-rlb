@@ -3,7 +3,7 @@ use crate::table::codec::{EntryDeserializer, EntrySerializer};
 use crate::table::field::{FieldConstraint, FieldKind, FloatKind, IntegerKind};
 use crate::table::serialization::RelocatableTable;
 use crate::table::{RowBoundary, RowLayout, SchemaDescriptor, SchemaId};
-use crate::{FieldDescriptor, Value};
+use crate::{FieldDescriptor, Row, Value};
 use rlb_error::{Error, Result};
 
 #[derive(Clone, Debug)]
@@ -62,6 +62,68 @@ impl PokemonDispositionDataTable {
             .get_mut(index)
             .ok_or_else(|| Error::Validation(format!("entry index {index} out of bounds")))?
             .set(field, value)
+    }
+
+    pub(crate) fn append_row(&mut self, row: &Row) -> Result<usize> {
+        let entry = PokemonDispositionData {
+            object_id: row
+                .get("object_id")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"object_id\"".into()))?,
+            pad_0x02: [0; 2],
+            friendship_id: row
+                .get("friendship_id")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"friendship_id\"".into()))?,
+            walking_ai_enabled: row
+                .get("walking_ai_enabled")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"walking_ai_enabled\"".into()))?,
+            field_position_candidates: row.get("field_position_candidates").cloned().ok_or_else(
+                || Error::Validation("missing field \"field_position_candidates\"".into()),
+            )?,
+            position_x: row
+                .get("position_x")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"position_x\"".into()))?,
+            position_y: row
+                .get("position_y")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"position_y\"".into()))?,
+            position_z: row
+                .get("position_z")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"position_z\"".into()))?,
+            rotation_y: row
+                .get("rotation_y")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"rotation_y\"".into()))?,
+            field_position_override: row.get("field_position_override").cloned().ok_or_else(
+                || Error::Validation("missing field \"field_position_override\"".into()),
+            )?,
+            pad_0x21: [0; 3],
+            unlock_id: row
+                .get("unlock_id")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"unlock_id\"".into()))?,
+            skill_game_type: row
+                .get("skill_game_type")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"skill_game_type\"".into()))?,
+            skill_game_start_position_group: row
+                .get("skill_game_start_position_group")
+                .cloned()
+                .ok_or_else(|| {
+                    Error::Validation("missing field \"skill_game_start_position_group\"".into())
+                })?,
+            damage_disposition: row
+                .get("damage_disposition")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"damage_disposition\"".into()))?,
+        };
+        let index = self.entries.len();
+        self.entries.push(entry);
+        Ok(index)
     }
 }
 

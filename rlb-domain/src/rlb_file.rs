@@ -2,7 +2,7 @@ use crate::relocation::RelocationTable;
 use crate::string_pool::StringPool;
 use crate::table::{ParseContext, Table, TableCollection, TableId};
 use crate::util::{checked_u32, resolve_string_from_raw_data};
-use crate::{FieldDescriptor, SchemaDescriptor, Value};
+use crate::{FieldDescriptor, Row, RowBoundary, SchemaDescriptor, Value};
 use rlb_error::{Error, Result};
 use rlb_format::{RawFile, TableRecord};
 
@@ -151,6 +151,80 @@ impl RLBFile {
             .ok_or_else(|| Error::Validation(format!("unknown TableId {table_id:?}")))?;
 
         table.set_field(entry_index, field, value)
+    }
+
+    pub fn append_row(&mut self, table_id: TableId, row: Row) -> Result<usize> {
+        let table = self
+            .table_collection
+            .get(table_id)
+            .ok_or_else(|| Error::Validation(format!("unknown TableId {table_id:?}")))?;
+        let schema = table.schema();
+
+        if let RowBoundary::Fixed { rows } = schema.rows.boundary {
+            return Err(Error::Validation(format!(
+                "cannot append to fixed-size schema {:?} with {rows} rows",
+                schema.id
+            )));
+        }
+
+        if let Some(max_rows) = schema.rows.max_rows
+            && table.entry_count() >= max_rows
+        {
+            return Err(Error::Validation(format!(
+                "schema {:?} cannot exceed {max_rows} rows",
+                schema.id
+            )));
+        }
+
+        //TODO: check if schema-driven makes this simpler
+        let counter = if let RowBoundary::CountedBy { schema, field } = schema.rows.boundary {
+            let mut tables = self.table_collection.ids_with_schema(schema);
+            let counter_id = tables.next().ok_or_else(|| {
+                Error::Validation(format!("table with schema {schema:?} does not exist"))
+            })?;
+            if tables.next().is_some() {
+                return Err(Error::Validation(format!(
+                    "multiple tables use counter schema {schema:?}"
+                )));
+            }
+
+            let value = self
+                .table_collection
+                .get(counter_id)
+                .and_then(|table| table.get_field(0, field))
+                .ok_or_else(|| {
+                    Error::Validation(format!(
+                        "counter field {field:?} does not exist on schema {schema:?}"
+                    ))
+                })?;
+            let Value::Integer(value) = value else {
+                return Err(Error::Validation(format!(
+                    "counter field {schema:?}.{field} is not an integer"
+                )));
+            };
+            let value = value.checked_add(1).ok_or_else(|| {
+                Error::Validation(format!("counter field {schema:?}.{field} overflowed"))
+            })?;
+
+            Some((counter_id, field, value))
+        } else {
+            None
+        };
+
+        let index = self
+            .table_collection
+            .get_mut(table_id)
+            .ok_or_else(|| Error::Validation(format!("unknown TableId {table_id:?}")))?
+            .append_row(&row)?;
+
+        if let Some((counter_id, field, value)) = counter {
+            self.table_collection
+                .get_mut(counter_id)
+                .ok_or_else(|| Error::Validation(format!("unknown TableId {counter_id:?}")))?
+                .set_field(0, field, Value::Integer(value))?;
+        }
+
+        Ok(index)
     }
 }
 

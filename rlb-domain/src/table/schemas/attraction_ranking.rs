@@ -1,10 +1,10 @@
-use crate::Value;
 use crate::table::codec::{EntryDeserializer, EntrySerializer};
 use crate::table::serialization::RelocatableTable;
 use crate::table::{
     FieldConstraint, FieldDescriptor, FieldKind, IntegerKind, ParseContext, RowBoundary, RowLayout,
     SchemaDescriptor, SchemaId,
 };
+use crate::{Row, Value};
 use rlb_error::{Error, Result};
 
 #[derive(Clone, Debug)]
@@ -24,7 +24,7 @@ impl AttractionRankingTable {
         rows: RowLayout {
             boundary: RowBoundary::Terminated,
             max_rows: Some(26), // game caps useable entries at 26 TODO: check whether limiting
-            // that and only allowing higher values once the cap is patchable?
+                                // that and only allowing higher values once the cap is patchable?
         },
     };
 
@@ -81,6 +81,42 @@ impl AttractionRankingTable {
             .get_mut(index)
             .ok_or_else(|| Error::Validation(format!("entry index {index} out of bounds")))?
             .set(field, value)
+    }
+
+    pub(crate) fn append_row(&mut self, row: &Row) -> Result<usize> {
+        let entry = AttractionRankingEntry {
+            friendship_id: row
+                .get("friendship_id")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"friendship_id\"".into()))?,
+            record_target: row
+                .get("record_target")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"record_target\"".into()))?,
+            bonus_record_target: row
+                .get("bonus_record_target")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"bonus_record_target\"".into()))?,
+            unknown_0x0c: row
+                .get("unknown_0x0c")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"unknown_0x0c\"".into()))?,
+            unknown_0x10: row
+                .get("unknown_0x10")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"unknown_0x10\"".into()))?,
+            unknown_0x14: row
+                .get("unknown_0x14")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"unknown_0x14\"".into()))?,
+            unknown_0x18: row
+                .get("unknown_0x18")
+                .cloned()
+                .ok_or_else(|| Error::Validation("missing field \"unknown_0x18\"".into()))?,
+        };
+        let index = self.entries.len();
+        self.entries.push(entry);
+        Ok(index)
     }
 }
 
