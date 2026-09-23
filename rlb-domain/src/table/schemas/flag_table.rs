@@ -14,6 +14,21 @@ pub(crate) struct FlagTable {
 }
 
 impl FlagTable {
+    pub(crate) fn create(rows: &[Row]) -> Result<Self> {
+        let mut table = Self {
+            entries: Vec::new(),
+            terminator: FlagEntry {
+                flag_name: Value::String(None),
+                bit_width: Value::Integer(0),
+                pad_0x05: [0; 3],
+            },
+        };
+        for row in rows {
+            table.append_row(row)?;
+        }
+        Ok(table)
+    }
+
     const ENTRY_SIZE: usize = 0x08;
     pub(crate) const SCHEMA: SchemaDescriptor = SchemaDescriptor {
         id: SchemaId::FlagTable,

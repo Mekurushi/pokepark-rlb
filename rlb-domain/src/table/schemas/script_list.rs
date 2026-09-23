@@ -13,6 +13,37 @@ pub(crate) struct ScriptListTable {
 }
 
 impl ScriptListTable {
+    pub(crate) fn create(rows: &[Row]) -> Result<Self> {
+        let mut table = Self {
+            entries: Vec::new(),
+            // TODO: move manual terminator entry into schema
+            terminator: ScriptListEntry {
+                name: Value::String(None),
+                object_id: Value::Integer(0),
+                minimum_chapter: Value::Integer(0),
+                medium_chapter: Value::Integer(0),
+                maximum_chapter: Value::Integer(0),
+                flagname: Value::String(None),
+                flag_value_condition: Value::Integer(0),
+                target_script: Value::Integer(5),
+                pad_0x1d: [0; 3],
+                unknown: Value::Integer(0),
+                entrypoint: Value::String(None),
+                zone_id: Value::Integer(0),
+                area_id: Value::Integer(0),
+                position_id: Value::Integer(0),
+                pad_0x34: Value::Integer(0),
+                after_script_entrypoint: Value::String(None),
+                animation: Value::String(None),
+                flagname2: Value::String(None),
+            },
+        };
+        for row in rows {
+            table.append_row(row)?;
+        }
+        Ok(table)
+    }
+
     const ENTRY_SIZE: usize = ScriptListEntry::SIZE;
     pub(crate) const SCHEMA: SchemaDescriptor = SchemaDescriptor {
         id: SchemaId::ScriptList,

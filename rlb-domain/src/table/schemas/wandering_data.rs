@@ -14,6 +14,22 @@ pub(crate) struct WanderingDataTable {
 }
 
 impl WanderingDataTable {
+    pub(crate) fn create(rows: &[Row]) -> Result<Self> {
+        let mut table = Self {
+            entries: Vec::new(),
+            terminator: WanderingDataEntry {
+                pokemon_unlock_id: Value::Integer(u32::MAX),
+                pokemon_friendship_id: Value::Integer(u32::MAX),
+                enabled: Value::Boolean(false),
+                pad: [0; 3],
+            },
+        };
+        for row in rows {
+            table.append_row(row)?;
+        }
+        Ok(table)
+    }
+
     const ENTRY_SIZE: usize = WanderingDataEntry::SIZE;
     pub(crate) const SCHEMA: SchemaDescriptor = SchemaDescriptor {
         id: SchemaId::WanderingData,

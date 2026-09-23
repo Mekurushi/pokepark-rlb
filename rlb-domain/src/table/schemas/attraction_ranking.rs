@@ -14,6 +14,25 @@ pub(crate) struct AttractionRankingTable {
 }
 
 impl AttractionRankingTable {
+    pub(crate) fn create(rows: &[Row]) -> Result<Self> {
+        let mut table = Self {
+            entries: Vec::new(),
+            terminator: AttractionRankingEntry {
+                friendship_id: Value::Integer(Self::TERMINATOR_FRIENDSHIP_ID),
+                record_target: Value::Integer(0),
+                bonus_record_target: Value::Integer(0),
+                unknown_0x0c: Value::Integer(0),
+                unknown_0x10: Value::Integer(0),
+                unknown_0x14: Value::Integer(0),
+                unknown_0x18: Value::Integer(0),
+            },
+        };
+        for row in rows {
+            table.append_row(row)?;
+        }
+        Ok(table)
+    }
+
     const ENTRY_SIZE: usize = 0x1c;
     const TERMINATOR_FRIENDSHIP_ID: u32 = 0xc9;
 

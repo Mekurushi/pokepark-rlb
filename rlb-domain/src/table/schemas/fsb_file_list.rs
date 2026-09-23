@@ -13,6 +13,19 @@ pub(crate) struct FsbFileListTable {
 }
 
 impl FsbFileListTable {
+    pub(crate) fn create(rows: &[Row]) -> Result<Self> {
+        let mut table = Self {
+            entries: Vec::new(),
+            terminator: FsbFileListData {
+                script_name: Value::String(None),
+            },
+        };
+        for row in rows {
+            table.append_row(row)?;
+        }
+        Ok(table)
+    }
+
     const ENTRY_SIZE: usize = FsbFileListData::SIZE;
     pub(crate) const SCHEMA: SchemaDescriptor = SchemaDescriptor {
         id: SchemaId::FsbFileList,

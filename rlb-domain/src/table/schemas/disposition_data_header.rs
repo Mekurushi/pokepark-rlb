@@ -3,7 +3,7 @@ use crate::table::codec::{EntryDeserializer, EntrySerializer};
 use crate::table::field::{FieldConstraint, FieldKind, IntegerKind};
 use crate::table::serialization::RelocatableTable;
 use crate::table::{RowBoundary, RowLayout, SchemaDescriptor, SchemaId};
-use crate::{FieldDescriptor, Value};
+use crate::{FieldDescriptor, Row, Value};
 use rlb_error::{Error, Result};
 
 #[derive(Clone, Debug)]
@@ -12,6 +12,25 @@ pub(crate) struct DispositionDataHeaderTable {
 }
 
 impl DispositionDataHeaderTable {
+    pub(crate) fn create(rows: &[Row]) -> Result<Self> {
+        let [row] = rows else {
+            return Err(Error::Validation(format!(
+                "DispositionDataHeader requires exactly one row, received {}",
+                rows.len()
+            )));
+        };
+        Ok(Self {
+            entry: DispositionDataHeader {
+                player_disposition_count: required(row, "player_disposition_count")?,
+                pokemon_disposition_count: required(row, "pokemon_disposition_count")?,
+                item_disposition_count: required(row, "item_disposition_count")?,
+                pad_0x03: 0,
+                item_kind_total_num_count: required(row, "item_kind_total_num_count")?,
+                pad_0x05: [0; 3],
+            },
+        })
+    }
+
     const ENTRY_SIZE: usize = 0x8;
 
     pub(crate) const SCHEMA: SchemaDescriptor = SchemaDescriptor {
@@ -157,4 +176,10 @@ impl DispositionDataHeader {
 fn as_u8(value: &Value) -> Result<u8> {
     u8::try_from(value.as_integer()?)
         .map_err(|_| Error::Validation("integer value exceeds u8 range".into()))
+}
+
+fn required(row: &Row, field: &str) -> Result<Value> {
+    row.get(field)
+        .cloned()
+        .ok_or_else(|| Error::Validation(format!("missing field {field:?}")))
 }

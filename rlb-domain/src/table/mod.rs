@@ -46,6 +46,40 @@ pub(crate) enum Table {
 }
 
 impl Table {
+    pub(crate) fn create(name: &str, rows: &[Row]) -> Result<Self> {
+        let table = match name {
+            "AttractionRanking" => Self::AttractionRanking(AttractionRankingTable::create(rows)?),
+            "dispositionDataHeader" => {
+                Self::DispositionDataHeader(DispositionDataHeaderTable::create(rows)?)
+            }
+            "playerDispositionData" => {
+                Self::PlayerDispositionData(PlayerDispositionDataTable::create(rows)?)
+            }
+            "pokemonDispositionData" => {
+                Self::PokemonDispositionData(PokemonDispositionDataTable::create(rows)?)
+            }
+            "itemDispositionData" => {
+                Self::ItemDispositionData(ItemDispositionDataTable::create(rows)?)
+            }
+            "itemKindTotalNumData" => {
+                Self::ItemKindTotalNumData(ItemKindTotalNumDataTable::create(rows)?)
+            }
+            "FlagTable" => Self::Flag(FlagTable::create(rows)?),
+            "BackFromAttractionScriptList"
+            | "ReplaceScriptList"
+            | "CheckObjectScriptList"
+            | "EnterZoneScriptList"
+            | "HitDashScriptList"
+            | "HitThunderboltScriptList"
+            | "TimeOutScriptList"
+            | "TouchAreaScriptList" => Self::ScriptList(ScriptListTable::create(rows)?),
+            "FsbFileListData" => Self::FsbFileList(FsbFileListTable::create(rows)?),
+            "WanderingDataTable" => Self::WanderingData(WanderingDataTable::create(rows)?),
+            _ => return Err(Error::UnknownTableSchema { name: name.into() }),
+        };
+        Ok(table)
+    }
+
     pub(crate) fn parse(name: &str, context: &ParseContext<'_>, offset: usize) -> Result<Self> {
         let table = match name {
             "AttractionRanking" => {

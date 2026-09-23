@@ -12,6 +12,16 @@ pub(crate) struct ItemKindTotalNumDataTable {
     entries: Vec<ItemKindTotalNumData>,
 }
 impl ItemKindTotalNumDataTable {
+    pub(crate) fn create(rows: &[Row]) -> Result<Self> {
+        let mut table = Self {
+            entries: Vec::new(),
+        };
+        for row in rows {
+            table.append_row(row)?;
+        }
+        Ok(table)
+    }
+
     const ENTRY_SIZE: usize = 0x8;
     pub(crate) const SCHEMA: SchemaDescriptor = SchemaDescriptor {
         id: SchemaId::ItemKindTotalNumData,

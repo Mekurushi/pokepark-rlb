@@ -29,6 +29,91 @@ pub struct TableView<'a> {
 }
 
 impl RLBFile {
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            table_collection: TableCollection::new(),
+            toc: Vec::new(),
+            other_toc: Vec::new(),
+        }
+    }
+
+    pub fn create_table(&mut self, label: impl Into<String>, rows: Vec<Row>) -> Result<TableId> {
+        if rows.is_empty() {
+            return Err(Error::Validation(
+                "creating a table requires at least one row".into(),
+            ));
+        }
+
+        let label = label.into();
+        let table = Table::create(&label, &rows)?;
+        let schema = table.schema();
+
+        if let RowBoundary::Fixed { rows: expected } = schema.rows.boundary
+            && table.entry_count() != expected
+        {
+            return Err(Error::Validation(format!(
+                "schema {:?} requires {expected} rows, received {}",
+                schema.id,
+                table.entry_count()
+            )));
+        }
+        if let Some(max_rows) = schema.rows.max_rows
+            && table.entry_count() > max_rows
+        {
+            return Err(Error::Validation(format!(
+                "schema {:?} cannot exceed {max_rows} rows",
+                schema.id
+            )));
+        }
+
+        let counter = if let RowBoundary::CountedBy { schema, field } = schema.rows.boundary {
+            let mut tables = self.table_collection.ids_with_schema(schema);
+            let counter_id = tables.next().ok_or_else(|| {
+                Error::Validation(format!("table with schema {schema:?} does not exist"))
+            })?;
+            if tables.next().is_some() {
+                return Err(Error::Validation(format!(
+                    "multiple tables use counter schema {schema:?}"
+                )));
+            }
+            let current = self
+                .table_collection
+                .get(counter_id)
+                .and_then(|table| table.get_field(0, field))
+                .ok_or_else(|| {
+                    Error::Validation(format!(
+                        "counter field {field:?} does not exist on schema {schema:?}"
+                    ))
+                })?;
+            let Value::Integer(current) = current else {
+                return Err(Error::Validation(format!(
+                    "counter field {schema:?}.{field} is not an integer"
+                )));
+            };
+            let increment = u32::try_from(table.entry_count())
+                .map_err(|_| Error::Validation("table row count exceeds u32".into()))?;
+            let value = current.checked_add(increment).ok_or_else(|| {
+                Error::Validation(format!("counter field {schema:?}.{field} overflowed"))
+            })?;
+            Some((counter_id, field, value))
+        } else {
+            None
+        };
+
+        let id = self.table_collection.insert(table);
+        self.toc.push(TocSlot { table: id, label });
+
+        if let Some((counter_id, field, value)) = counter {
+            self.table_collection
+                .get_mut(counter_id)
+                .ok_or_else(|| Error::Validation(format!("unknown TableId {counter_id:?}")))?
+                .set_field(0, field, Value::Integer(value))?;
+        }
+
+        Ok(id)
+    }
+
     pub fn from_raw(raw: &RawFile) -> Result<Self> {
         let data = raw.data();
         let relocation_table = raw.relocation_table();

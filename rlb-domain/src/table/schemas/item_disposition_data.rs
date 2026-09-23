@@ -12,6 +12,16 @@ pub(crate) struct ItemDispositionDataTable {
     entries: Vec<ItemDispositionData>,
 }
 impl ItemDispositionDataTable {
+    pub(crate) fn create(rows: &[Row]) -> Result<Self> {
+        let mut table = Self {
+            entries: Vec::new(),
+        };
+        for row in rows {
+            table.append_row(row)?;
+        }
+        Ok(table)
+    }
+
     const ENTRY_SIZE: usize = 0x24;
     pub(crate) const SCHEMA: SchemaDescriptor = SchemaDescriptor {
         id: SchemaId::ItemDispositionData,
